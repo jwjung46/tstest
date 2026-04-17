@@ -13,23 +13,28 @@ export type SessionSnapshot =
   | {
       status: "loading";
       session: null;
+      recentLoginProvider: string | null;
     }
   | {
       status: "authenticated";
       session: Session;
+      recentLoginProvider: string | null;
     }
   | {
       status: "unauthenticated";
       session: null;
+      recentLoginProvider: string | null;
     };
 
 type SessionSnapshotResponse = {
   session: Session | null;
+  recentLoginProvider?: string | null;
 };
 
 const LOADING_SNAPSHOT: SessionSnapshot = {
   status: "loading",
   session: null,
+  recentLoginProvider: null,
 };
 
 let currentSnapshot: SessionSnapshot = LOADING_SNAPSHOT;
@@ -77,15 +82,21 @@ export function resolveSessionSnapshotResponse(
     return {
       status: "unauthenticated",
       session: null,
+      recentLoginProvider: null,
     };
   }
 
   const candidate = payload as Partial<SessionSnapshotResponse>;
+  const recentLoginProvider =
+    typeof candidate.recentLoginProvider === "string"
+      ? candidate.recentLoginProvider
+      : null;
 
   if (candidate.session === null) {
     return {
       status: "unauthenticated",
       session: null,
+      recentLoginProvider,
     };
   }
 
@@ -93,12 +104,14 @@ export function resolveSessionSnapshotResponse(
     return {
       status: "authenticated",
       session: candidate.session,
+      recentLoginProvider,
     };
   }
 
   return {
     status: "unauthenticated",
     session: null,
+    recentLoginProvider,
   };
 }
 
@@ -132,6 +145,7 @@ export async function initializeSessionSnapshot(): Promise<SessionSnapshot> {
         const snapshot = {
           status: "unauthenticated",
           session: null,
+          recentLoginProvider: null,
         } satisfies SessionSnapshot;
 
         setSessionSnapshot(snapshot);
@@ -145,6 +159,7 @@ export async function initializeSessionSnapshot(): Promise<SessionSnapshot> {
       const snapshot = {
         status: "unauthenticated",
         session: null,
+        recentLoginProvider: null,
       } satisfies SessionSnapshot;
 
       setSessionSnapshot(snapshot);

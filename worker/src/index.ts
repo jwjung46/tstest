@@ -1,5 +1,6 @@
 import { handleOAuthCallback, handleOAuthStart } from "./oauth/flow.ts";
 import type { WorkerEnv } from "./env.ts";
+import { handleAccountRequest } from "./account/api.ts";
 import {
   createSessionSnapshotResponse,
   createSignOutResponse,
@@ -34,6 +35,12 @@ async function handleRequest(request: Request, env: WorkerEnv) {
 
   if (notesResponse) {
     return notesResponse;
+  }
+
+  const accountResponse = await handleAccountRequest(request, env);
+
+  if (accountResponse) {
+    return accountResponse;
   }
 
   if (url.pathname === "/api/session" && request.method === "GET") {

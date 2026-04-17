@@ -12,12 +12,24 @@ import {
   type OAuthProviderId,
 } from "./providers.ts";
 import type { WorkerEnv, WorkerEnvKey } from "../env.ts";
-import { createSessionCookie, type WorkerSession } from "./session.ts";
+import {
+  createRecentLoginProviderCookie,
+  createSessionCookie,
+  readSessionFromRequest,
+} from "./session.ts";
+import {
+  buildWorkerSession,
+  linkIdentityToUser,
+  resolveSignInIdentity,
+} from "../account/service.ts";
+import type { NormalizedIdentityPayload } from "../account/types.ts";
 
 type OAuthStatePayload = {
+  intent: "sign_in" | "link";
   provider: OAuthProviderId;
   redirectTo: string;
   state: string;
+  currentUserId: string | null;
 };
 
 type OAuthTokenResponse = {
@@ -63,6 +75,10 @@ function normalizeRedirectTarget(value: string | null) {
   return value;
 }
 
+function normalizeOAuthIntent(value: string | null) {
+  return value === "link" ? "link" : "sign_in";
+}
+
 function buildProviderFailureLocation(
   provider: OAuthProviderId,
   reason: OAuthFailureReason,
@@ -73,6 +89,26 @@ function buildProviderFailureLocation(
   });
 
   return `/?${params.toString()}`;
+}
+
+function buildLinkFailureLocation(
+  redirectTo: string,
+  provider: OAuthProviderId,
+  code: string,
+) {
+  const url = new URL(redirectTo, "https://app.example");
+  url.searchParams.set("accountLinkError", code);
+  url.searchParams.set("accountLinkProvider", provider);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function buildLinkSuccessLocation(
+  redirectTo: string,
+  provider: OAuthProviderId,
+) {
+  const url = new URL(redirectTo, "https://app.example");
+  url.searchParams.set("accountLinkSuccess", provider);
+  return `${url.pathname}${url.search}${url.hash}`;
 }
 
 function mapProviderCallbackError(error: string): OAuthFailureReason {
@@ -156,25 +192,30 @@ async function exchangeAuthorizationCode(
   return (await response.json()) as OAuthTokenResponse;
 }
 
-function mapGoogleProfile(profile: Record<string, unknown>): WorkerSession {
+function mapGoogleProfile(
+  profile: Record<string, unknown>,
+): NormalizedIdentityPayload {
   const subject = typeof profile.sub === "string" ? profile.sub : "";
   const name =
     typeof profile.name === "string" && profile.name
       ? profile.name
       : "Google User";
   const email = typeof profile.email === "string" ? profile.email : undefined;
+  const emailVerified =
+    typeof profile.email_verified === "boolean" ? profile.email_verified : null;
 
   return {
-    user: {
-      id: `google:${subject}`,
-      name,
-      email,
-      provider: "google",
-    },
+    provider: "google",
+    providerUserId: subject,
+    email: email ?? null,
+    emailVerified,
+    displayName: name,
   };
 }
 
-function mapKakaoProfile(profile: Record<string, unknown>): WorkerSession {
+function mapKakaoProfile(
+  profile: Record<string, unknown>,
+): NormalizedIdentityPayload {
   const account =
     profile.kakao_account && typeof profile.kakao_account === "object"
       ? (profile.kakao_account as Record<string, unknown>)
@@ -189,18 +230,23 @@ function mapKakaoProfile(profile: Record<string, unknown>): WorkerSession {
       ? nestedProfile.nickname
       : "Kakao User";
   const email = typeof account.email === "string" ? account.email : undefined;
+  const emailVerified =
+    typeof account.is_email_verified === "boolean"
+      ? account.is_email_verified
+      : null;
 
   return {
-    user: {
-      id: `kakao:${String(id ?? "")}`,
-      name: nickname,
-      email,
-      provider: "kakao",
-    },
+    provider: "kakao",
+    providerUserId: String(id ?? ""),
+    email: email ?? null,
+    emailVerified,
+    displayName: nickname,
   };
 }
 
-function mapNaverProfile(profile: Record<string, unknown>): WorkerSession {
+function mapNaverProfile(
+  profile: Record<string, unknown>,
+): NormalizedIdentityPayload {
   const response =
     profile.response && typeof profile.response === "object"
       ? (profile.response as Record<string, unknown>)
@@ -211,14 +257,17 @@ function mapNaverProfile(profile: Record<string, unknown>): WorkerSession {
       ? response.name
       : "Naver User";
   const email = typeof response.email === "string" ? response.email : undefined;
+  const emailVerified =
+    typeof response.email_verified === "boolean"
+      ? response.email_verified
+      : null;
 
   return {
-    user: {
-      id: `naver:${id}`,
-      name,
-      email,
-      provider: "naver",
-    },
+    provider: "naver",
+    providerUserId: id,
+    email: email ?? null,
+    emailVerified,
+    displayName: name,
   };
 }
 
@@ -256,10 +305,23 @@ export async function handleOAuthStart(
 ) {
   const requestUrl = new URL(request.url);
   const provider = getOAuthProviderConfig(providerId);
+  const intent = normalizeOAuthIntent(requestUrl.searchParams.get("intent"));
+  const currentSession =
+    intent === "link"
+      ? await readSessionFromRequest(env.AUTH_COOKIE_SECRET, request)
+      : null;
   const state = createStateToken();
   const redirectTo = normalizeRedirectTarget(
     requestUrl.searchParams.get("redirectTo"),
   );
+
+  if (intent === "link" && !currentSession) {
+    return redirectWithCookies(
+      buildLinkFailureLocation(redirectTo, providerId, "link_session_required"),
+      [],
+    );
+  }
+
   const callbackUrl = `${requestUrl.origin}${getProviderCallbackPath(providerId)}`;
   const authorizationUrl = new URL(provider.authorizationEndpoint.toString());
 
@@ -273,9 +335,11 @@ export async function handleOAuthStart(
   }
 
   const stateCookie = await encodeSignedCookieValue(env.AUTH_COOKIE_SECRET, {
+    intent,
     provider: providerId,
     redirectTo,
     state,
+    currentUserId: currentSession?.user.id ?? null,
   } satisfies OAuthStatePayload);
 
   return redirectWithCookies(authorizationUrl.toString(), [
@@ -295,6 +359,17 @@ export async function handleOAuthCallback(
   const error = requestUrl.searchParams.get("error");
 
   if (error) {
+    if (requestUrl.searchParams.get("intent") === "link") {
+      return redirectWithCookies(
+        buildLinkFailureLocation(
+          "/app",
+          providerId,
+          mapProviderCallbackError(error),
+        ),
+        buildFailureCookies(requestUrl),
+      );
+    }
+
     return redirectToProviderFailure(
       providerId,
       mapProviderCallbackError(error),
@@ -332,27 +407,108 @@ export async function handleOAuthCallback(
     );
   }
 
-  let session: WorkerSession;
+  let identityPayload: NormalizedIdentityPayload;
 
   try {
-    session = await fetchProviderSession(provider, token.access_token);
+    identityPayload = await fetchProviderSession(provider, token.access_token);
   } catch {
-    return redirectToProviderFailure(
-      providerId,
-      "userinfo_fetch_failed",
-      requestUrl,
+    return statePayload.intent === "link"
+      ? redirectWithCookies(
+          buildLinkFailureLocation(
+            statePayload.redirectTo,
+            providerId,
+            "userinfo_fetch_failed",
+          ),
+          buildFailureCookies(requestUrl),
+        )
+      : redirectToProviderFailure(
+          providerId,
+          "userinfo_fetch_failed",
+          requestUrl,
+        );
+  }
+
+  const now = new Date().toISOString();
+  const secure = isSecureRequest(requestUrl);
+
+  if (statePayload.intent === "link") {
+    const currentSession = await readSessionFromRequest(
+      env.AUTH_COOKIE_SECRET,
+      request,
+    );
+
+    if (
+      !currentSession ||
+      currentSession.user.id !== statePayload.currentUserId
+    ) {
+      return redirectWithCookies(
+        buildLinkFailureLocation(
+          statePayload.redirectTo,
+          providerId,
+          "link_session_required",
+        ),
+        buildFailureCookies(requestUrl),
+      );
+    }
+
+    const linkResult = await linkIdentityToUser(env.DB, {
+      currentUserId: currentSession.user.id,
+      payload: identityPayload,
+      now,
+    });
+
+    if (!linkResult.ok) {
+      return redirectWithCookies(
+        buildLinkFailureLocation(
+          statePayload.redirectTo,
+          providerId,
+          linkResult.code,
+        ),
+        buildFailureCookies(requestUrl),
+      );
+    }
+
+    return redirectWithCookies(
+      buildLinkSuccessLocation(statePayload.redirectTo, providerId),
+      [
+        await createSessionCookie(
+          env.AUTH_COOKIE_SECRET,
+          buildWorkerSession(linkResult),
+          secure,
+        ),
+        await createRecentLoginProviderCookie(
+          env.AUTH_COOKIE_SECRET,
+          providerId,
+          secure,
+        ),
+        serializeCookie(OAUTH_COOKIE_NAME, "", {
+          maxAge: 0,
+          secure,
+        }),
+      ],
     );
   }
+
+  const accountResult = await resolveSignInIdentity(
+    env.DB,
+    identityPayload,
+    now,
+  );
 
   return redirectWithCookies(statePayload.redirectTo, [
     await createSessionCookie(
       env.AUTH_COOKIE_SECRET,
-      session,
-      isSecureRequest(requestUrl),
+      buildWorkerSession(accountResult),
+      secure,
+    ),
+    await createRecentLoginProviderCookie(
+      env.AUTH_COOKIE_SECRET,
+      providerId,
+      secure,
     ),
     serializeCookie(OAUTH_COOKIE_NAME, "", {
       maxAge: 0,
-      secure: isSecureRequest(requestUrl),
+      secure,
     }),
   ]);
 }

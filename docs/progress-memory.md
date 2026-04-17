@@ -2,8 +2,8 @@
 
 ## Current status
 
-- Current stage: Stage 9 notes feature completed on top of the existing Worker auth/session boundary.
-- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, a Worker-handled sign-out endpoint, authenticated-home handling for `/`, a tri-state auth structure attached to the real session boundary, and a first real protected feature module for personal notes with D1-backed CRUD inside the authenticated app shell.
+- Current stage: Stage 9 notes baseline plus account linking and merge foundation completed on top of the existing Worker auth/session boundary.
+- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, signed sign-in vs link state handling, internal `users` plus `user_identities`, internal-user-backed sessions, browser-local recent-login provider hinting, linked-provider lookup inside the protected app shell, merge foundations, and personal notes with internal-user D1 ownership.
 
 ## Completed work
 
@@ -117,6 +117,11 @@
 - What: Added a D1-backed `notes` schema plus owner-scoped Worker CRUD endpoints under `/api/notes`, then implemented the first feature-closed product module under `src/features/notes` with a two-pane list/editor workspace, manual save, hard delete, empty/loading/error states, and tests for pure notes logic plus Worker API behavior.
 - Why: This turns the previously empty protected app base into the first reusable reference feature module without breaking the existing auth/session boundary or pushing notes logic into page components.
 
+### 23. Account linking and merge foundation
+
+- What: Replaced the effective provider-scoped account model with internal `users` plus `user_identities`, migrated `notes.user_id` semantics to internal users, routed OAuth callbacks through identity resolution, added explicit signed linking intent, exposed linked login methods in the protected auth area, recorded a recent-login provider hint for `/`, and added a real `mergeUsers(sourceUserId, targetUserId)` server foundation.
+- Why: This removes the structural limitation where each provider behaved like a separate app user, keeps notes continuity under one internal account, and makes future merge or unlink work additive instead of redesign-heavy.
+
 ## Decisions fixed so far
 
 - Language: TypeScript.
@@ -132,9 +137,9 @@
 ## Not done yet
 
 - Durable session persistence beyond the current signed-cookie session boundary.
-- Durable account management capabilities such as account linking, role systems, refresh-token rotation, or richer profile/settings flows.
+- End-user merge wizard UI, unlink UI, automatic email-based linking, role systems, refresh-token rotation, or richer profile/settings flows.
 - Any Stage 10+ expansion beyond the initial personal notes module, such as search, sharing, tags, attachments, or separate note detail routes.
 
 ## Next planned stage
 
-- Expand beyond the Stage 9 notes baseline only after preserving the same feature-closed structure, Worker auth/session boundary, and D1 owner-scoped data access rules established here.
+- Expand beyond the current notes-plus-account foundation only after preserving the same feature-closed structure, Worker auth/session boundary, internal-user ownership rules, and explicit linking/merge policies established here.

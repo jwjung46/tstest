@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 
 import {
   buildWorkspaceSelectionState,
@@ -134,4 +136,31 @@ test("getSelectionAfterDelete chooses the next note, then previous, then null", 
     ),
     null,
   );
+});
+
+test("account-linking migration creates users and user identities with merge-ready fields", () => {
+  const migration = fs.readFileSync(
+    path.join(
+      process.cwd(),
+      "worker",
+      "migrations",
+      "0002_account_linking.sql",
+    ),
+    "utf8",
+  );
+
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS users/i);
+  assert.match(migration, /display_name TEXT NOT NULL/i);
+  assert.match(migration, /primary_email TEXT/i);
+  assert.match(migration, /status TEXT NOT NULL/i);
+  assert.match(migration, /merged_into_user_id TEXT/i);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS user_identities/i);
+  assert.match(migration, /provider_user_id TEXT NOT NULL/i);
+  assert.match(migration, /email_verified INTEGER/i);
+  assert.match(
+    migration,
+    /UNIQUE\s*\(\s*provider\s*,\s*provider_user_id\s*\)/i,
+  );
+  assert.match(migration, /UNIQUE\s*\(\s*user_id\s*,\s*provider\s*\)/i);
+  assert.match(migration, /UPDATE notes SET user_id =/i);
 });

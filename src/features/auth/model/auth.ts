@@ -11,16 +11,19 @@ export type AuthState =
       status: "loading";
       session: null;
       user: null;
+      recentLoginProvider: string | null;
     }
   | {
       status: "authenticated";
       session: Session;
       user: SessionUser;
+      recentLoginProvider: string | null;
     }
   | {
       status: "unauthenticated";
       session: null;
       user: null;
+      recentLoginProvider: string | null;
     };
 
 type RedirectTargetParts = {
@@ -63,12 +66,30 @@ const AUTH_ERROR_MESSAGES = {
     "Your account information could not be loaded. Please try again.",
 } as const satisfies Record<string, string>;
 
+const ACCOUNT_LINK_FEEDBACK_MESSAGES = {
+  provider_already_linked:
+    "That login method is already linked to this account.",
+  identity_already_linked:
+    "That login method is already linked to this account.",
+  identity_linked_to_other_user:
+    "That provider identity is already linked to another account.",
+  link_session_required:
+    "Linking requires an active signed-in session. Please sign in again.",
+  invalid_state: "The linking flow expired. Please try again.",
+  oauth_callback_failed: "The linking flow did not complete. Please try again.",
+  token_exchange_failed:
+    "The provider login could not be completed while linking. Please try again.",
+  userinfo_fetch_failed:
+    "The provider account information could not be loaded while linking.",
+} as const satisfies Record<string, string>;
+
 export function resolveAuthState(snapshot: SessionSnapshot): AuthState {
   if (snapshot.status === "authenticated") {
     return {
       status: "authenticated",
       session: snapshot.session,
       user: snapshot.session.user,
+      recentLoginProvider: snapshot.recentLoginProvider,
     };
   }
 
@@ -77,6 +98,7 @@ export function resolveAuthState(snapshot: SessionSnapshot): AuthState {
       status: "loading",
       session: null,
       user: null,
+      recentLoginProvider: snapshot.recentLoginProvider,
     };
   }
 
@@ -84,6 +106,7 @@ export function resolveAuthState(snapshot: SessionSnapshot): AuthState {
     status: "unauthenticated",
     session: null,
     user: null,
+    recentLoginProvider: snapshot.recentLoginProvider,
   };
 }
 
@@ -131,6 +154,18 @@ export function buildOAuthStartPath(
 ): string {
   const params = new URLSearchParams({
     redirectTo,
+  });
+
+  return `/auth/${provider}/start?${params.toString()}`;
+}
+
+export function buildAccountLinkStartPath(
+  provider: AuthProviderId,
+  redirectTo: string,
+): string {
+  const params = new URLSearchParams({
+    redirectTo,
+    intent: "link",
   });
 
   return `/auth/${provider}/start?${params.toString()}`;
@@ -192,4 +227,31 @@ export function getPublicAuthFeedback({
   return `${getAuthErrorMessage(authError)} ${
     authProviderLabel ? `Provider: ${authProviderLabel}.` : ""
   }`.trim();
+}
+
+export function getAccountLinkFeedback({
+  accountLinkError,
+  accountLinkSuccess,
+  accountLinkProviderLabel,
+}: {
+  accountLinkError: string | null;
+  accountLinkSuccess: string | null;
+  accountLinkProviderLabel: string | null;
+}) {
+  if (accountLinkSuccess && accountLinkProviderLabel) {
+    return `Linked ${accountLinkProviderLabel} successfully.`;
+  }
+
+  if (!accountLinkError) {
+    return null;
+  }
+
+  const message =
+    ACCOUNT_LINK_FEEDBACK_MESSAGES[
+      accountLinkError as keyof typeof ACCOUNT_LINK_FEEDBACK_MESSAGES
+    ] ?? "The login method could not be linked. Please try again.";
+
+  return accountLinkProviderLabel
+    ? `${message} Provider: ${accountLinkProviderLabel}.`
+    : message;
 }

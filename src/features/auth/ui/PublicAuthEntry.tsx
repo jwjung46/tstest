@@ -71,6 +71,14 @@ export default function PublicAuthEntry() {
             </p>
           ) : null}
 
+          {authState.recentLoginProvider ? (
+            <p className="hint" role="status">
+              Recent login:{" "}
+              {getAuthProviderLabel(authState.recentLoginProvider) ??
+                authState.recentLoginProvider}
+            </p>
+          ) : null}
+
           <OAuthLoginActions redirectTo={redirectTo} />
         </div>
       </section>

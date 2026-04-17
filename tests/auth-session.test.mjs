@@ -5,6 +5,7 @@ import {
   getAuthErrorMessage,
   getPublicAuthFeedback,
   buildAuthRedirectTarget,
+  buildAccountLinkStartPath,
   getDefaultPostAuthRedirectTarget,
   getHomeRouteBehavior,
   buildOAuthStartPath,
@@ -24,6 +25,7 @@ test("getSessionSnapshot starts in loading before session bootstrap completes", 
   assert.deepEqual(getSessionSnapshot(), {
     status: "loading",
     session: null,
+    recentLoginProvider: null,
   });
 });
 
@@ -32,6 +34,7 @@ test("getAuthState reflects loading before session bootstrap completes", () => {
     status: "loading",
     session: null,
     user: null,
+    recentLoginProvider: null,
   });
 });
 
@@ -48,11 +51,19 @@ test("isAuthenticated derives from session presence", () => {
 });
 
 test("resolveAuthState keeps loading separate from unauthenticated", () => {
-  assert.deepEqual(resolveAuthState({ status: "loading", session: null }), {
-    status: "loading",
-    session: null,
-    user: null,
-  });
+  assert.deepEqual(
+    resolveAuthState({
+      status: "loading",
+      session: null,
+      recentLoginProvider: null,
+    }),
+    {
+      status: "loading",
+      session: null,
+      user: null,
+      recentLoginProvider: null,
+    },
+  );
 });
 
 test("resolveAuthState exposes session and user for authenticated state", () => {
@@ -65,23 +76,33 @@ test("resolveAuthState exposes session and user for authenticated state", () => 
     },
   };
 
-  assert.deepEqual(resolveAuthState({ status: "authenticated", session }), {
-    status: "authenticated",
-    session,
-    user: session.user,
-  });
+  assert.deepEqual(
+    resolveAuthState({
+      status: "authenticated",
+      session,
+      recentLoginProvider: "google",
+    }),
+    {
+      status: "authenticated",
+      session,
+      user: session.user,
+      recentLoginProvider: "google",
+    },
+  );
 });
 
 test("resolveSessionSnapshotResponse maps missing session payloads to unauthenticated", () => {
   assert.deepEqual(resolveSessionSnapshotResponse({ session: null }), {
     status: "unauthenticated",
     session: null,
+    recentLoginProvider: null,
   });
 });
 
 test("resolveSessionSnapshotResponse keeps provider data from the worker session payload", () => {
   assert.deepEqual(
     resolveSessionSnapshotResponse({
+      recentLoginProvider: "google",
       session: {
         user: {
           id: "user-1",
@@ -93,6 +114,7 @@ test("resolveSessionSnapshotResponse keeps provider data from the worker session
     }),
     {
       status: "authenticated",
+      recentLoginProvider: "google",
       session: {
         user: {
           id: "user-1",
@@ -111,6 +133,7 @@ test("requireAuth centralizes protected-route interpretation", () => {
       status: "unauthenticated",
       session: null,
       user: null,
+      recentLoginProvider: null,
     }),
     {
       allowed: false,
@@ -134,6 +157,13 @@ test("buildOAuthStartPath preserves the protected redirect target", () => {
   assert.equal(
     buildOAuthStartPath("google", "/app/projects?tab=open#memo"),
     "/auth/google/start?redirectTo=%2Fapp%2Fprojects%3Ftab%3Dopen%23memo",
+  );
+});
+
+test("buildAccountLinkStartPath encodes link intent separately from normal sign-in", () => {
+  assert.equal(
+    buildAccountLinkStartPath("naver", "/app"),
+    "/auth/naver/start?redirectTo=%2Fapp&intent=link",
   );
 });
 
@@ -165,6 +195,7 @@ test("getHomeRouteBehavior redirects authenticated users to the protected app", 
         name: "Test User",
         provider: "google",
       },
+      recentLoginProvider: "google",
     }),
     {
       kind: "redirect",
@@ -179,6 +210,7 @@ test("getHomeRouteBehavior keeps home in a pending state while session bootstrap
       status: "loading",
       session: null,
       user: null,
+      recentLoginProvider: null,
     }),
     {
       kind: "pending",

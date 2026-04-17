@@ -24,6 +24,12 @@ export default function AuthenticatedUserSummary({
           <span className="authenticated-user-summary__label">Provider</span>
           <strong>{providerLabel}</strong>
         </div>
+        <div>
+          <span className="authenticated-user-summary__label">
+            Internal user
+          </span>
+          <strong>{user.id}</strong>
+        </div>
       </div>
     </section>
   );
