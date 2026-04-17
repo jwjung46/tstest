@@ -79,12 +79,15 @@ export async function readRecentLoginProviderFromRequest(
 }
 
 export function createSignOutResponse(secure: boolean) {
+  const headers = new Headers({
+    location: "/",
+  });
+  headers.append("set-cookie", clearSessionCookie(secure));
+  headers.append("set-cookie", clearRecentLoginProviderCookie(secure));
+
   return new Response(null, {
     status: 302,
-    headers: {
-      location: "/",
-      "set-cookie": `${clearSessionCookie(secure)}, ${clearRecentLoginProviderCookie(secure)}`,
-    },
+    headers,
   });
 }
 

@@ -275,6 +275,10 @@ function readCookie(response, name) {
   return match;
 }
 
+function readSetCookies(response) {
+  return response.headers.getSetCookie();
+}
+
 test("provider configuration is centralized and includes all Phase 5 providers", () => {
   assert.deepEqual(
     listOAuthProviders().map((provider) => provider.id),
@@ -351,12 +355,27 @@ test("callback rejects requests with invalid state before token exchange", async
   );
 });
 
-test("callback maps provider-declared failures to a safe public auth error", async () => {
+test("callback maps provider-declared failures to a safe public auth error for valid sign-in state", async () => {
+  const env = createEnv();
+  const startResponse = await worker.fetch(
+    new Request("https://example.com/auth/google/start?redirectTo=%2Fapp"),
+    env,
+    createExecutionContext(),
+  );
+  const providerUrl = new URL(startResponse.headers.get("location"));
+  const state = providerUrl.searchParams.get("state");
+  assert.ok(state, "expected OAuth state parameter");
+
   const response = await worker.fetch(
     new Request(
-      "https://example.com/auth/google/callback?error=server_error&error_description=raw-provider-detail",
+      `https://example.com/auth/google/callback?error=server_error&error_description=raw-provider-detail&state=${state}`,
+      {
+        headers: {
+          cookie: readCookie(startResponse, OAUTH_COOKIE_NAME).split(";").at(0),
+        },
+      },
     ),
-    createEnv(),
+    env,
     createExecutionContext(),
   );
 
@@ -364,6 +383,60 @@ test("callback maps provider-declared failures to a safe public auth error", asy
   assert.equal(
     response.headers.get("location"),
     "/?authError=oauth_callback_failed&authProvider=google",
+  );
+});
+
+test("callback routes provider-declared failures through the link feedback path for valid link state", async () => {
+  const env = createEnv();
+  const signedSessionCookie = await createSessionCookie(
+    env.AUTH_COOKIE_SECRET,
+    {
+      user: {
+        id: "user-1",
+        name: "Current User",
+        email: "current@example.com",
+        provider: "google",
+      },
+    },
+    true,
+  );
+  const startResponse = await worker.fetch(
+    new Request(
+      "https://example.com/auth/naver/start?redirectTo=%2Fapp%3Ftab%3Dlinked&intent=link",
+      {
+        headers: {
+          cookie: signedSessionCookie.split(";").at(0),
+        },
+      },
+    ),
+    env,
+    createExecutionContext(),
+  );
+
+  const providerUrl = new URL(startResponse.headers.get("location"));
+  const state = providerUrl.searchParams.get("state");
+  assert.ok(state, "expected OAuth state parameter");
+
+  const callbackResponse = await worker.fetch(
+    new Request(
+      `https://example.com/auth/naver/callback?error=server_error&state=${state}`,
+      {
+        headers: {
+          cookie: [
+            signedSessionCookie.split(";").at(0),
+            readCookie(startResponse, OAUTH_COOKIE_NAME).split(";").at(0),
+          ].join("; "),
+        },
+      },
+    ),
+    env,
+    createExecutionContext(),
+  );
+
+  assert.equal(callbackResponse.status, 302);
+  assert.equal(
+    callbackResponse.headers.get("location"),
+    "/app?tab=linked&accountLinkError=oauth_callback_failed&accountLinkProvider=naver",
   );
 });
 
@@ -808,12 +881,12 @@ test("mergeUsers reassigns notes, reconciles identities, and marks the source us
   );
 });
 
-test("sign-out clears the signed session cookie and returns to the public route", async () => {
+test("sign-out clears both cookies with separate set-cookie headers and returns to the public route", async () => {
   const response = await worker.fetch(
     new Request("https://example.com/auth/sign-out", {
       method: "POST",
       headers: {
-        cookie: `${SESSION_COOKIE_NAME}=signed-session-value`,
+        cookie: `${SESSION_COOKIE_NAME}=signed-session-value; __recent_login_provider=signed-provider-value`,
       },
     }),
     createEnv(),
@@ -827,4 +900,11 @@ test("sign-out clears the signed session cookie and returns to the public route"
   assert.match(sessionCookie, /^__session=/);
   assert.match(sessionCookie, /Max-Age=0/);
   assert.match(sessionCookie, /Path=\//);
+
+  const setCookies = readSetCookies(response);
+  assert.equal(setCookies.length, 2);
+  assert.match(setCookies[0], /^__session=/);
+  assert.match(setCookies[0], /Max-Age=0/);
+  assert.match(setCookies[1], /^__recent_login_provider=/);
+  assert.match(setCookies[1], /Max-Age=0/);
 });

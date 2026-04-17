@@ -356,13 +356,28 @@ export async function handleOAuthCallback(
 ) {
   const requestUrl = new URL(request.url);
   const provider = getOAuthProviderConfig(providerId);
+  const state = requestUrl.searchParams.get("state");
+  const cookies = parseCookieHeader(request.headers.get("cookie"));
+  const statePayload = await decodeSignedCookieValue<OAuthStatePayload>(
+    env.AUTH_COOKIE_SECRET,
+    cookies.get(OAUTH_COOKIE_NAME) ?? null,
+  );
   const error = requestUrl.searchParams.get("error");
 
   if (error) {
-    if (requestUrl.searchParams.get("intent") === "link") {
+    if (
+      !state ||
+      !statePayload ||
+      statePayload.provider !== providerId ||
+      statePayload.state !== state
+    ) {
+      return redirectToProviderFailure(providerId, "invalid_state", requestUrl);
+    }
+
+    if (statePayload.intent === "link") {
       return redirectWithCookies(
         buildLinkFailureLocation(
-          "/app",
+          statePayload.redirectTo,
           providerId,
           mapProviderCallbackError(error),
         ),
@@ -378,12 +393,6 @@ export async function handleOAuthCallback(
   }
 
   const code = requestUrl.searchParams.get("code");
-  const state = requestUrl.searchParams.get("state");
-  const cookies = parseCookieHeader(request.headers.get("cookie"));
-  const statePayload = await decodeSignedCookieValue<OAuthStatePayload>(
-    env.AUTH_COOKIE_SECRET,
-    cookies.get(OAUTH_COOKIE_NAME) ?? null,
-  );
 
   if (
     !code ||
