@@ -20,7 +20,7 @@ export const oauthProviders = [
     authorizationEndpoint: new URL("https://kauth.kakao.com/oauth/authorize"),
     tokenEndpoint: "https://kauth.kakao.com/oauth/token",
     userInfoEndpoint: "https://kapi.kakao.com/v2/user/me",
-    scopes: ["profile_nickname", "account_email"],
+    scopes: ["profile_nickname"],
     clientIdEnv: "KAKAO_OAUTH_CLIENT_ID",
     clientSecretEnv: "KAKAO_OAUTH_CLIENT_SECRET",
   },
