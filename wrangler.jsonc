@@ -12,7 +12,7 @@
     {
       "binding": "DB",
       "database_name": "tstest-notes",
-      "database_id": "c1ad751b-1c55-4422-94e0-29ce527ade98",
+      "database_id": "9663b620-3cb3-41c3-984b-64c935fe604c",
       "migrations_dir": "worker/migrations",
     },
   ],

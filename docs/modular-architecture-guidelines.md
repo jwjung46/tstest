@@ -103,8 +103,8 @@ src/
     app/
   features/
     auth/
+    notes/
     profile/
-    dashboard/
     ...
   shared/
     ui/
@@ -137,7 +137,7 @@ src/
 
 이 프로젝트의 핵심 계층이다.
 실제 기능은 여기에 산다.
-예를 들어 프로필, 대시보드, 검색, 알림, 게시물 같은 기능별로 나눈다.
+예를 들어 현재 repo처럼 인증(`auth`)과 노트(`notes`) 같은 기능별로 나누고, 이후 검색, 알림, 게시물 같은 기능도 같은 방식으로 붙인다.
 각 기능은 자신의 UI, 상태, 서버 호출, 검증, 예외 처리를 포함할 수 있다.
 
 ### `shared/`
@@ -270,8 +270,8 @@ feature는 자기 책임만 가져야 한다.
 - 공통 HTTP 클라이언트: `platform/api`
 - 기능별 호출: `features/<feature>/services`
 
-예를 들어 프로필 관련 API는 `features/profile/services`에서 관리한다.
-직접 페이지나 버튼에서 `fetch('/api/profile')`를 호출하지 않는다.
+예를 들어 현재 노트 API는 `features/notes/services`에서 관리한다.
+직접 페이지나 버튼에서 `fetch('/api/notes')`를 호출하지 않는다.
 
 ---
 

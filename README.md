@@ -1,6 +1,6 @@
 # tstest
 
-Cloudflare Worker auth/session boundary 위에 쌓는 재사용형 authenticated app base다. 현재는 Stage 9 notes feature 이후 내부 `users` + `user_identities` 계정 모델, provider linking, recent-login provider hint, merge foundation까지 포함한다.
+Cloudflare Worker auth/session boundary 위에 쌓는 재사용형 authenticated app base다. 현재는 Stage 9 notes baseline 이후 내부 `users` + `user_identities` 계정 모델, provider linking, recent-login provider hint, merge foundation까지 포함한다.
 
 ## Current Scope
 
@@ -9,7 +9,7 @@ Cloudflare Worker auth/session boundary 위에 쌓는 재사용형 authenticated
 - Worker-owned routes: `/auth/*`, `/api/*`
 - Auth providers: Google, Kakao, Naver
 - Canonical account model: internal user + linked identities
-- First protected feature: personal notes inside `/app`
+- Current `/app` scope: account/session surfaces plus personal notes
 
 ## Architecture
 
@@ -54,7 +54,7 @@ Cloudflare Worker auth/session boundary 위에 쌓는 재사용형 authenticated
   - `PATCH /api/notes/:id`
   - `DELETE /api/notes/:id`
 
-`/api/session` now returns an internal-user-backed session snapshot plus a browser-local recent login provider hint. OAuth callbacks resolve provider identities into internal users before issuing sessions, and all notes endpoints derive ownership from the internal session user id. The frontend never sends `userId`.
+`/api/session` now returns an internal-user-backed session snapshot plus a browser-local recent login provider hint. OAuth callbacks resolve provider identities into internal users before issuing sessions, Worker-handled sign-out clears both the signed session cookie and recent-login provider cookie, and all notes endpoints derive ownership from the internal session user id. The frontend never sends `userId`.
 
 On the first successful sign-in for a new provider identity, the Worker creates the canonical `users` row immediately from confirmed provider profile data, links the `user_identities` row, and issues a session for that internal user. Later sign-ins update identity-side provider metadata only and do not auto-overwrite canonical `users.display_name` or `users.primary_email`.
 
@@ -67,7 +67,7 @@ On the first successful sign-in for a new provider identity, the Worker creates 
 - Pre-launch account initialization assumes a resettable D1 database and a clean first-sign-in path. Imported placeholder canonical-profile uplift is not part of the supported runtime.
 - Linking is explicit and only allowed while signed in.
 - Automatic email-based linking or merging is intentionally not implemented.
-- Server-side merge foundations exist so future merge UI can stay additive.
+- Server-side merge foundations exist so future merge UI can stay additive, but no end-user merge wizard or unlink UI is shipped yet.
 - The raw internal session user id remains internal data and is not shown in the normal end-user summary UI.
 
 ## Local Development
