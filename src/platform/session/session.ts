@@ -8,6 +8,23 @@ export type Session = {
   user: SessionUser;
 };
 
-export function getStoredSession(): Session | null {
-  return null;
+export type SessionSnapshot =
+  | {
+      status: "loading";
+      session: null;
+    }
+  | {
+      status: "authenticated";
+      session: Session;
+    }
+  | {
+      status: "unauthenticated";
+      session: null;
+    };
+
+export function getSessionSnapshot(): SessionSnapshot {
+  return {
+    status: "unauthenticated",
+    session: null,
+  };
 }

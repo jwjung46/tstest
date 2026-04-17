@@ -534,3 +534,16 @@ feature는 자기 책임만 가져야 한다.
 초반에는 빨라 보여도 결국 스스로 그 구조를 두려워하게 된다.
 
 이 문서는 그 상태를 막기 위한 기준이다.
+
+---
+
+## 20. 구현 후 확인 사항
+
+구현이 끝난 뒤에는 아래 항목을 최소한 확인한다.
+
+- 인증 상태를 boolean 하나로 단순화하지 않았는지 확인한다.
+- 보호 라우트가 `loading`, `authenticated`, `unauthenticated`를 구분하는지 확인한다.
+- 인증 실패 리다이렉트 시 원래 목적지 정보(`pathname`, `search`, `hash`)를 보존하는지 확인한다.
+- 세션 경계와 UI 로직이 섞이지 않았는지 확인한다.
+- 현재 단계 범위를 넘는 구현(OAuth, provider 연결, mock 로그인, secret 처리)이 들어가지 않았는지 확인한다.
+- `npm run format`, `npm run lint`, `npm run typecheck`, `npm run build`를 통과했는지 확인한다.

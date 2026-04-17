@@ -2,8 +2,8 @@
 
 ## Current status
 
-- Current stage: Step 2 completed for the base route skeleton.
-- Verified state: The app now has a public `/` route and a protected `/app` route wired through React Router.
+- Current stage: Phase 4 stability pass completed for the auth/session boundary.
+- Verified state: The app has a public `/` route, a protected `/app` route, a session-oriented auth model, and a tri-state auth structure ready for the next real authentication phase.
 
 ## Completed work
 
@@ -77,6 +77,21 @@
 - What: Added `react-router-dom`, split the app into route-specific pages, and created a guarded `/app` route backed by a placeholder auth module.
 - Why: This gives the project a production-oriented route boundary now, while keeping real authentication implementation for the next step.
 
+### 15. Phase 3 public and protected UI skeleton
+
+- What: Turned `/` into a landing page with disabled social-login entry UI and turned `/app` into an app-shell placeholder structure.
+- Why: This established reusable page-level UI before real authentication and feature modules are added.
+
+### 16. Phase 4 session boundary refactor
+
+- What: Replaced the boolean-style auth helper with `getSession()`, `getCurrentUser()`, and `isAuthenticated()` over a session boundary.
+- Why: This moved route protection to a session-shaped contract so real authentication can be attached later without rewriting route composition.
+
+### 17. Phase 4 stability pass
+
+- What: Added tri-state auth interpretation (`loading`, `authenticated`, `unauthenticated`), preserved full redirect targets, and separated platform session snapshots from auth interpretation.
+- Why: This reduces route churn in the next authentication phase and makes the current boundary safer to extend.
+
 ## Decisions fixed so far
 
 - Language: TypeScript.
@@ -91,12 +106,11 @@
 
 ## Not done yet
 
-- Public landing page content design.
 - Google / Kakao / Naver OAuth integration.
-- Session handling and real protected route access control.
+- Real session loading and persistence.
 - Cloudflare deployment configuration for production.
 - Protected app internal modules and feature screens.
 
 ## Next planned stage
 
-- Step 3: Replace the placeholder auth check with a real authentication/session foundation aligned to Cloudflare.
+- Attach real authentication and session persistence to the existing tri-state auth/session boundary.
