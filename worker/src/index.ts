@@ -7,6 +7,7 @@ import {
 } from "./oauth/session.ts";
 import { isOAuthProviderId } from "./oauth/providers.ts";
 import { handleNotesRequest } from "./notes/api.ts";
+import { handleBillingRequest } from "./billing/api.ts";
 
 function matchAuthRoute(pathname: string) {
   const match = pathname.match(/^\/auth\/([^/]+)\/(start|callback)$/);
@@ -35,6 +36,12 @@ async function handleRequest(request: Request, env: WorkerEnv) {
 
   if (notesResponse) {
     return notesResponse;
+  }
+
+  const billingResponse = await handleBillingRequest(request, env);
+
+  if (billingResponse) {
+    return billingResponse;
   }
 
   const accountResponse = await handleAccountRequest(request, env);

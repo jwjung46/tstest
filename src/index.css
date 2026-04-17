@@ -603,6 +603,107 @@ a {
   gap: var(--space-4);
 }
 
+.billing-panel {
+  display: grid;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(19, 34, 56, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.billing-panel__header {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.billing-panel__title {
+  margin-top: 8px;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+}
+
+.billing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+
+.billing-card {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border-radius: 18px;
+  border: 1px solid rgba(19, 34, 56, 0.08);
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.billing-card--placeholder {
+  align-content: start;
+}
+
+.billing-card__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.billing-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--color-primary-strong);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.billing-meta {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.billing-meta__row {
+  display: grid;
+  gap: 4px;
+}
+
+.billing-meta__row dt {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.billing-meta__row dd {
+  margin: 0;
+}
+
+.billing-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.billing-list__item {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(19, 34, 56, 0.04);
+}
+
+.billing-list__item span {
+  color: var(--color-muted);
+}
+
 .linked-provider-card {
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -713,6 +814,7 @@ a {
   .app-shell__header,
   .app-shell__body,
   .capability-grid,
+  .billing-grid,
   .linked-login-methods__grid,
   .notes-workspace {
     grid-template-columns: 1fr;

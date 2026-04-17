@@ -4,6 +4,11 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
+  hasEntitlement,
+  recomputeEntitlements,
+} from "../worker/src/billing/entitlements.ts";
+import { createBillingDbMock } from "./helpers/billing-test-helpers.mjs";
+import {
   buildWorkspaceSelectionState,
   getDefaultSelectedNoteId,
   getDisplayTitle,
@@ -173,4 +178,153 @@ test("account-linking migration creates users and user identities with merge-rea
   assert.doesNotMatch(migration, /Imported Naver User/i);
   assert.doesNotMatch(migration, /Imported User/i);
   assert.doesNotMatch(migration, /legacy:/i);
+});
+
+test("billing migration creates the Stage 1 internal subscription tables and seed plans", () => {
+  const migration = fs.readFileSync(
+    path.join(process.cwd(), "worker", "migrations", "0003_billing_core.sql"),
+    "utf8",
+  );
+
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS billing_customers/i);
+  assert.match(migration, /user_id TEXT NOT NULL UNIQUE/i);
+  assert.match(migration, /customer_key TEXT NOT NULL UNIQUE/i);
+  assert.match(
+    migration,
+    /CREATE TABLE IF NOT EXISTS billing_payment_methods/i,
+  );
+  assert.match(migration, /billing_key TEXT NOT NULL UNIQUE/i);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS subscription_plans/i);
+  assert.match(migration, /plan_code TEXT NOT NULL UNIQUE/i);
+  assert.match(migration, /amount INTEGER NOT NULL/i);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS subscriptions/i);
+  assert.match(migration, /latest_payment_method_id TEXT/i);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS subscription_cycles/i);
+  assert.match(migration, /toss_order_id TEXT NOT NULL UNIQUE/i);
+  assert.match(migration, /scheduled_amount INTEGER NOT NULL/i);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS billing_events/i);
+  assert.match(migration, /event_key TEXT NOT NULL UNIQUE/i);
+  assert.match(migration, /processing_attempts INTEGER NOT NULL DEFAULT 0/i);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS entitlements/i);
+  assert.match(migration, /feature_key TEXT NOT NULL/i);
+  assert.match(
+    migration,
+    /CREATE TABLE IF NOT EXISTS manual_entitlement_overrides/i,
+  );
+  assert.match(migration, /INSERT INTO subscription_plans/i);
+  assert.match(migration, /'free'/i);
+  assert.match(migration, /'pro_monthly'/i);
+});
+
+test("recomputeEntitlements grants free defaults without requiring provider-scoped billing state", async () => {
+  const db = createBillingDbMock({
+    subscriptionPlans: [
+      {
+        id: "plan-free",
+        plan_code: "free",
+        name: "Free",
+        billing_interval: "none",
+        currency: "KRW",
+        amount: 0,
+        is_active: 1,
+        created_at: "2026-04-18T00:00:00.000Z",
+        updated_at: "2026-04-18T00:00:00.000Z",
+      },
+    ],
+  });
+
+  const entitlements = await recomputeEntitlements(db, "user-free", {
+    now: "2026-04-18T09:00:00.000Z",
+  });
+
+  assert.deepEqual(
+    entitlements.map((entry) => ({
+      featureKey: entry.featureKey,
+      status: entry.status,
+      sourceType: entry.sourceType,
+    })),
+    [
+      {
+        featureKey: "notes.basic",
+        status: "active",
+        sourceType: "plan_default",
+      },
+    ],
+  );
+  assert.equal(
+    await hasEntitlement(
+      db,
+      "user-free",
+      "notes.basic",
+      "2026-04-18T09:00:00.000Z",
+    ),
+    true,
+  );
+});
+
+test("recomputeEntitlements promotes pro features from an active internal-user subscription", async () => {
+  const db = createBillingDbMock({
+    subscriptionPlans: [
+      {
+        id: "plan-free",
+        plan_code: "free",
+        name: "Free",
+        billing_interval: "none",
+        currency: "KRW",
+        amount: 0,
+        is_active: 1,
+        created_at: "2026-04-18T00:00:00.000Z",
+        updated_at: "2026-04-18T00:00:00.000Z",
+      },
+      {
+        id: "plan-pro",
+        plan_code: "pro_monthly",
+        name: "Pro Monthly",
+        billing_interval: "month",
+        currency: "KRW",
+        amount: 9900,
+        is_active: 1,
+        created_at: "2026-04-18T00:00:00.000Z",
+        updated_at: "2026-04-18T00:00:00.000Z",
+      },
+    ],
+    subscriptions: [
+      {
+        id: "sub-1",
+        user_id: "user-pro",
+        billing_customer_id: "bcus_1",
+        plan_id: "plan-pro",
+        status: "active",
+        current_period_start: "2026-04-18T00:00:00.000Z",
+        current_period_end: "2026-05-18T00:00:00.000Z",
+        cancel_at_period_end: 0,
+        canceled_at: null,
+        ended_at: null,
+        trial_start: null,
+        trial_end: null,
+        billing_anchor_at: "2026-04-18T00:00:00.000Z",
+        latest_payment_method_id: null,
+        created_at: "2026-04-18T00:00:00.000Z",
+        updated_at: "2026-04-18T00:00:00.000Z",
+      },
+    ],
+  });
+
+  const entitlements = await recomputeEntitlements(db, "user-pro", {
+    now: "2026-04-18T09:00:00.000Z",
+  });
+
+  assert.deepEqual(
+    entitlements.map((entry) => entry.featureKey),
+    ["notes.basic", "notes.premium"],
+  );
+  assert.equal(
+    await hasEntitlement(
+      db,
+      "user-pro",
+      "notes.premium",
+      "2026-04-18T09:00:00.000Z",
+    ),
+    true,
+  );
 });

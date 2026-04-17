@@ -2,8 +2,8 @@
 
 ## Current status
 
-- Current stage: Stage 9 notes baseline plus account linking, merge foundation, and reset-based account initialization cleanup completed on top of the existing Worker auth/session boundary.
-- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, signed sign-in vs link state handling, Worker-handled sign-out, internal `users` plus `user_identities`, internal-user-backed sessions, browser-local recent-login provider hinting, linked-provider lookup inside the protected app shell, merge foundations, and personal notes with internal-user D1 ownership. Current `/app` scope is account/session surfaces plus the personal notes module only. Canonical `users.display_name` and `users.primary_email` are initialized from confirmed provider data on the first successful sign-in for a new identity, later sign-ins update identity-side provider metadata only and do not auto-overwrite canonical profile fields, the normal signed-in summary no longer shows raw internal user ids, and no end-user merge wizard or unlink UI is shipped yet.
+- Current stage: Stage 1 Toss subscription system foundation added on top of the existing Stage 9 notes/account/auth baseline.
+- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, signed sign-in vs link state handling, Worker-handled sign-out, internal `users` plus `user_identities`, internal-user-backed sessions, browser-local recent-login provider hinting, linked-provider lookup inside the protected app shell, merge foundations, personal notes with internal-user D1 ownership, and a new internal-user-based billing foundation. Billing ownership is internal-user-based only through `billing_customers.user_id`, not provider identity scoped. The billing domain now includes `billing_customers`, `billing_payment_methods`, `subscription_plans`, `subscriptions`, `subscription_cycles`, `billing_events`, `entitlements`, and `manual_entitlement_overrides`, with Toss isolated behind `worker/src/billing/toss-client.ts`. Current `/app` scope is account/session surfaces, the Stage 1 billing overview surface, and the personal notes module. Real Toss billing-key setup, real recurring charge approval, and real webhook verification are still Stage 2 work.
 
 ## Completed work
 
@@ -132,6 +132,11 @@
 - What: Rewrote the account-linking migration to create structure only, removed imported placeholder canonical-profile uplift logic from runtime sign-in, kept first successful sign-in as the only normal canonical profile initialization path, and preserved notes ownership under internal user ids.
 - Why: The project is still pre-launch and the database can be reset, so the supported path should be a clean internal-user model from the first successful sign-in instead of preserving temporary placeholder normalization branches.
 
+### 26. Stage 1 Toss subscription foundation
+
+- What: Added a durable internal billing schema and Worker billing domain under `worker/src/billing`, including internal-user-owned billing customers, plan catalog, internal subscription contracts, recurring cycle records, idempotent billing event logging, entitlement recomputation, and minimal protected billing UI under `src/features/billing`.
+- Why: Stage 2 needs to attach real Toss billing-key setup, recurring charge approval, and webhook validation without redesigning billing ownership or feature-access structure, so the internal subscription and entitlement model must exist first.
+
 ## Decisions fixed so far
 
 - Language: TypeScript.
@@ -148,8 +153,9 @@
 
 - Durable session persistence beyond the current signed-cookie session boundary.
 - End-user merge wizard UI, unlink UI, automatic email-based linking, role systems, refresh-token rotation, or richer profile/settings flows.
-- Any Stage 10+ expansion beyond the initial personal notes module, such as search, sharing, tags, attachments, or separate note detail routes.
+- Real Toss client key / secret wiring, billing-key registration flow, authKey to billingKey confirmation, real recurring charge approval, real webhook signature/domain validation, recurring charge scheduling, or production payment-method UX.
+- Any later product expansion beyond the current notes plus billing foundation, such as search, sharing, tags, attachments, or separate note detail routes.
 
 ## Next planned stage
 
-- Expand beyond the current notes-plus-account foundation only after preserving the same feature-closed structure, Worker auth/session boundary, internal-user ownership rules, and explicit linking/merge policies established here.
+- Attach real Toss connectivity to the existing Stage 1 billing boundaries without changing the architectural truth that billing belongs to the internal user and app access is driven by entitlements rather than raw provider payloads.

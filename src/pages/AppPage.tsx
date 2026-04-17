@@ -1,5 +1,6 @@
 import AppShell from "../app/layout/AppShell";
 import AuthenticatedSessionPanel from "../features/auth/ui/AuthenticatedSessionPanel";
+import { BillingOverviewPanel } from "../features/billing/index.ts";
 import { NotesWorkspace } from "../features/notes/index.ts";
 import SignOutForm from "../features/auth/ui/SignOutForm";
 
@@ -10,6 +11,10 @@ export default function AppPage() {
       title="Signed-in workspace"
       subtitle="The protected auth/session boundary stays intact while the first modular product feature lives inside the app shell."
       navigationItems={[
+        {
+          label: "Billing",
+          description: "Internal-user subscription state and entitlements.",
+        },
         {
           label: "Notes",
           description: "Personal notes module backed by Worker APIs and D1.",
@@ -26,6 +31,7 @@ export default function AppPage() {
       headerActions={<SignOutForm />}
     >
       <AuthenticatedSessionPanel />
+      <BillingOverviewPanel />
       <NotesWorkspace />
     </AppShell>
   );
