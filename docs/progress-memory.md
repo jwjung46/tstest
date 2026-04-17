@@ -121,7 +121,8 @@
 
 - Language: TypeScript.
 - UI framework: React.
-- Local dev environment: Vite for the app UI and Wrangler dev for the Worker-based auth/session boundary.- Routing: React Router with `createBrowserRouter`.
+- Local dev environment: Vite for the app UI and Wrangler dev for the Worker-based auth/session boundary.
+- Routing: React Router with `createBrowserRouter`.
 - Formatting tool: Prettier.
 - Lint tool: ESLint.
 - Commit hook tool: Husky.

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildWorkspaceSelectionState,
   getDefaultSelectedNoteId,
   getDisplayTitle,
   getNotePreview,
@@ -67,6 +68,41 @@ test("getDefaultSelectedNoteId returns the first note id when notes exist", () =
     "note-1",
   );
   assert.equal(getDefaultSelectedNoteId([]), null);
+});
+
+test("buildWorkspaceSelectionState derives selected id and draft seed from loaded notes", () => {
+  assert.deepEqual(
+    buildWorkspaceSelectionState([
+      {
+        id: "note-1",
+        title: "",
+        content: "First",
+        createdAt: "2026-04-17T10:00:00.000Z",
+        updatedAt: "2026-04-17T10:00:00.000Z",
+      },
+      {
+        id: "note-2",
+        title: "Second",
+        content: "Second body",
+        createdAt: "2026-04-16T10:00:00.000Z",
+        updatedAt: "2026-04-16T10:00:00.000Z",
+      },
+    ]),
+    {
+      selectedId: "note-1",
+      selectedNote: {
+        id: "note-1",
+        title: "",
+        content: "First",
+        createdAt: "2026-04-17T10:00:00.000Z",
+        updatedAt: "2026-04-17T10:00:00.000Z",
+      },
+    },
+  );
+  assert.deepEqual(buildWorkspaceSelectionState([]), {
+    selectedId: null,
+    selectedNote: null,
+  });
 });
 
 test("getSelectionAfterDelete chooses the next note, then previous, then null", () => {

@@ -9,7 +9,7 @@ import {
   upsertNote,
 } from "../services/notes-api.ts";
 import {
-  getDefaultSelectedNoteId,
+  buildWorkspaceSelectionState,
   getSelectionAfterDelete,
 } from "./note-state.ts";
 import { validateNoteInput } from "./note-validation.ts";
@@ -62,6 +62,24 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+function applyLoadedNotesState(
+  loadedNotes: Note[],
+  setNotes: React.Dispatch<React.SetStateAction<Note[]>>,
+  setSelectedId: React.Dispatch<React.SetStateAction<string | null>>,
+  setDraft: React.Dispatch<React.SetStateAction<Draft | null>>,
+  setListStatus: React.Dispatch<
+    React.SetStateAction<"loading" | "ready" | "error">
+  >,
+) {
+  setNotes(loadedNotes);
+  setListStatus("ready");
+
+  const { selectedId, selectedNote } =
+    buildWorkspaceSelectionState(loadedNotes);
+  setSelectedId(selectedId);
+  setDraft(selectedNote ? createDraftFromNote(selectedNote) : null);
+}
+
 export function useNotesWorkspace() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -99,17 +117,12 @@ export function useNotesWorkspace() {
           return;
         }
 
-        setNotes(loadedNotes);
-        setListStatus("ready");
-
-        const nextSelectedId = getDefaultSelectedNoteId(loadedNotes);
-        setSelectedId(nextSelectedId);
-        setDraft(
-          nextSelectedId
-            ? createDraftFromNote(
-                loadedNotes.find((note) => note.id === nextSelectedId)!,
-              )
-            : null,
+        applyLoadedNotesState(
+          loadedNotes,
+          setNotes,
+          setSelectedId,
+          setDraft,
+          setListStatus,
         );
       } catch (error) {
         if (!isActive) {
@@ -217,17 +230,12 @@ export function useNotesWorkspace() {
 
     try {
       const loadedNotes = await fetchNotes();
-      setNotes(loadedNotes);
-      setListStatus("ready");
-
-      const nextSelectedId = getDefaultSelectedNoteId(loadedNotes);
-      setSelectedId(nextSelectedId);
-      setDraft(
-        nextSelectedId
-          ? createDraftFromNote(
-              loadedNotes.find((note) => note.id === nextSelectedId)!,
-            )
-          : null,
+      applyLoadedNotesState(
+        loadedNotes,
+        setNotes,
+        setSelectedId,
+        setDraft,
+        setListStatus,
       );
     } catch (error) {
       setListStatus("error");

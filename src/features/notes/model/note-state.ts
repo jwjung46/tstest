@@ -12,6 +12,18 @@ export function getDefaultSelectedNoteId(notes: SelectableNote[]) {
   return notes[0]?.id ?? null;
 }
 
+export function buildWorkspaceSelectionState(notes: Note[]) {
+  const selectedId = getDefaultSelectedNoteId(notes);
+  const selectedNote = selectedId
+    ? (notes.find((note) => note.id === selectedId) ?? null)
+    : null;
+
+  return {
+    selectedId,
+    selectedNote,
+  };
+}
+
 export function getSelectionAfterDelete(
   notes: SelectableNote[],
   deletedId: string,

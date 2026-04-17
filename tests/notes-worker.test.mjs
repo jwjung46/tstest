@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import worker from "../worker/src/index.ts";
 import { createSessionCookie } from "../worker/src/oauth/session.ts";
+import { handleNotesRequest } from "../worker/src/notes/api.ts";
 
 function createExecutionContext() {
   return {
@@ -169,6 +170,22 @@ test("notes list requires an authenticated session", async () => {
       message: "Authentication is required.",
     },
   });
+});
+
+test("non-notes paths return null before touching session env", async () => {
+  const env = {
+    get AUTH_COOKIE_SECRET() {
+      throw new Error("session env should not be touched");
+    },
+    DB: createDbMock(),
+  };
+
+  const response = await handleNotesRequest(
+    new Request("https://example.com/api/session"),
+    env,
+  );
+
+  assert.equal(response, null);
 });
 
 test("notes APIs only expose notes owned by the current session user", async () => {

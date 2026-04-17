@@ -1,22 +1,19 @@
 {
-	"$schema": "./node_modules/wrangler/config-schema.json",
-	"name": "tstest",
-	"main": "./worker/src/index.ts",
-	"compatibility_date": "2026-04-17",
-	"assets": {
-		"directory": "./dist",
-		"not_found_handling": "single-page-application",
-		"run_worker_first": [
-			"/auth/*",
-			"/api/*"
-		],
-	},
-	"d1_databases": [
-		{
-			"binding": "DB",
-			"database_name": "tstest-notes",
-			"database_id": "c1ad751b-1c55-4422-94e0-29ce527ade98",
-			"migrations_dir": "worker/migrations",
-		},
-	],
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "tstest",
+  "main": "./worker/src/index.ts",
+  "compatibility_date": "2026-04-17",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/auth/*", "/api/*"],
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "tstest-notes",
+      "database_id": "c1ad751b-1c55-4422-94e0-29ce527ade98",
+      "migrations_dir": "worker/migrations",
+    },
+  ],
 }

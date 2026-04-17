@@ -72,11 +72,12 @@ export async function handleNotesRequest(
   env: WorkerEnv,
 ): Promise<Response | null> {
   const url = new URL(request.url);
-  const userId = await requireUserId(env, request);
 
   if (!url.pathname.startsWith("/api/notes")) {
     return null;
   }
+
+  const userId = await requireUserId(env, request);
 
   if (!userId) {
     return errorResponse(401, "unauthorized", "Authentication is required.");
