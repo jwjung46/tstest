@@ -947,9 +947,11 @@ test("toss webhook processing is idempotent by event key and does not require a 
       method: "POST",
       headers: {
         "content-type": "application/json",
+        "tosspayments-webhook-transmission-id": "whmsg_1",
+        "tosspayments-webhook-transmission-time": "2026-04-18T10:00:01.000Z",
+        "tosspayments-webhook-transmission-retried-count": "0",
       },
       body: JSON.stringify({
-        eventId: "evt_toss_1",
         eventType: "PAYMENT_STATUS_CHANGED",
         createdAt: "2026-04-18T10:00:00.000000",
         data: {
@@ -980,13 +982,248 @@ test("toss webhook processing is idempotent by event key and does not require a 
   assert.deepEqual(await firstResponse.json(), {
     ok: true,
     duplicate: false,
-    eventKey: "evt_toss_1",
+    eventKey: "whmsg_1",
   });
   assert.deepEqual(await secondResponse.json(), {
     ok: true,
     duplicate: true,
-    eventKey: "evt_toss_1",
+    eventKey: "whmsg_1",
   });
+});
+
+test("payment webhook persists a durable billing event using Toss transmission headers", async () => {
+  const env = createStage2BillingEnv({
+    subscriptions: [
+      {
+        id: "sub_1",
+        user_id: "user-1",
+        billing_customer_id: "bcus_1",
+        plan_id: "plan-pro",
+        status: "incomplete",
+        current_period_start: null,
+        current_period_end: null,
+        cancel_at_period_end: 0,
+        canceled_at: null,
+        ended_at: null,
+        trial_start: null,
+        trial_end: null,
+        billing_anchor_at: null,
+        latest_payment_method_id: null,
+        created_at: "2026-04-18T09:00:00.000Z",
+        updated_at: "2026-04-18T09:00:00.000Z",
+      },
+    ],
+    subscriptionCycles: [
+      {
+        id: "scyc_1",
+        subscription_id: "sub_1",
+        cycle_index: 1,
+        period_start: "2026-04-18T09:00:00.000Z",
+        period_end: "2026-05-18T09:00:00.000Z",
+        status: "pending",
+        scheduled_amount: 9900,
+        currency: "KRW",
+        payment_method_id: null,
+        toss_payment_key: null,
+        toss_order_id: "toss_pro_monthly_test_header_1",
+        charged_at: null,
+        failed_at: null,
+        failure_code: null,
+        failure_message: null,
+        created_at: "2026-04-18T09:00:00.000Z",
+        updated_at: "2026-04-18T09:00:00.000Z",
+      },
+    ],
+    billingCustomers: [
+      {
+        id: "bcus_1",
+        user_id: "user-1",
+        provider: "toss_payments",
+        customer_key: "tcus_11111111111111111111111111111111",
+        created_at: "2026-04-18T09:00:00.000Z",
+        updated_at: "2026-04-18T09:00:00.000Z",
+      },
+    ],
+  });
+
+  const response = await worker.fetch(
+    new Request("https://example.com/api/webhooks/toss", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "tosspayments-webhook-transmission-id": "whmsg_header_1",
+        "tosspayments-webhook-transmission-time": "2026-04-18T10:00:02.000Z",
+        "tosspayments-webhook-transmission-retried-count": "0",
+      },
+      body: JSON.stringify({
+        eventType: "PAYMENT_STATUS_CHANGED",
+        createdAt: "2026-04-18T10:00:00.000000",
+        data: {
+          orderId: "toss_pro_monthly_test_header_1",
+          paymentKey: "pay_header_1",
+          totalAmount: 9900,
+          status: "DONE",
+          approvedAt: "2026-04-18T10:00:00.000Z",
+        },
+      }),
+    }),
+    env,
+    createExecutionContext(),
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(env.DB.state.billingEvents.length, 1);
+  assert.equal(env.DB.state.billingEvents[0].event_key, "whmsg_header_1");
+  assert.equal(env.DB.state.billingEvents[0].source_type, "webhook");
+  assert.equal(env.DB.state.billingEvents[0].processing_status, "processed");
+  assert.equal(env.DB.state.billingEvents[0].related_user_id, "user-1");
+
+  const persistedPayload = JSON.parse(
+    env.DB.state.billingEvents[0].payload_json,
+  );
+  assert.equal(persistedPayload.delivery?.transmissionId, "whmsg_header_1");
+  assert.equal(persistedPayload.delivery?.rawBody?.length > 0, true);
+});
+
+test("unsupported Toss webhook events are accepted and durably recorded as ignored", async () => {
+  const env = createStage2BillingEnv();
+
+  const response = await worker.fetch(
+    new Request("https://example.com/api/webhooks/toss", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "tosspayments-webhook-transmission-id": "whmsg_ignored_1",
+        "tosspayments-webhook-transmission-time": "2026-04-18T11:00:01.000Z",
+        "tosspayments-webhook-transmission-retried-count": "0",
+      },
+      body: JSON.stringify({
+        eventType: "METHOD_UPDATED",
+        createdAt: "2026-04-18T11:00:00.000000",
+        data: {
+          customerKey: "tcus_11111111111111111111111111111111",
+          methodKey: "method_1",
+          status: "ENABLED",
+        },
+      }),
+    }),
+    env,
+    createExecutionContext(),
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(env.DB.state.billingEvents.length, 1);
+  assert.equal(env.DB.state.billingEvents[0].event_key, "whmsg_ignored_1");
+  assert.equal(env.DB.state.billingEvents[0].processing_status, "ignored");
+  assert.equal(env.DB.state.subscriptionCycles.length, 0);
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    duplicate: false,
+    eventKey: "whmsg_ignored_1",
+  });
+});
+
+test("confirm success and later webhook delivery remain compatible and idempotent", async () => {
+  const env = createStage2BillingEnv();
+  const cookie = await createCookieHeader(env.AUTH_COOKIE_SECRET);
+  const sessionResponse = await worker.fetch(
+    new Request("https://example.com/api/billing/checkout/session", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie,
+      },
+      body: JSON.stringify({
+        planCode: "pro_monthly",
+      }),
+    }),
+    env,
+    createExecutionContext(),
+  );
+  const sessionPayload = await sessionResponse.json();
+
+  await withPatchedFetch(
+    async (request) => {
+      if (
+        request.url === "https://api.tosspayments.com/v1/payments/confirm" &&
+        request.method === "POST"
+      ) {
+        return createTossApiResponse(
+          createTossSuccessPayload({
+            orderId: sessionPayload.checkout.orderId,
+            paymentKey: "pay_confirm_then_webhook_1",
+            approvedAt: "2026-04-18T12:00:00.000Z",
+          }),
+        );
+      }
+
+      return null;
+    },
+    async () => {
+      const confirmResponse = await worker.fetch(
+        new Request("https://example.com/api/billing/checkout/confirm", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            cookie,
+          },
+          body: JSON.stringify({
+            paymentKey: "pay_confirm_then_webhook_1",
+            orderId: sessionPayload.checkout.orderId,
+            amount: 9900,
+          }),
+        }),
+        env,
+        createExecutionContext(),
+      );
+
+      assert.equal(confirmResponse.status, 200);
+    },
+  );
+
+  const webhookResponse = await worker.fetch(
+    new Request("https://example.com/api/webhooks/toss", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "tosspayments-webhook-transmission-id": "whmsg_after_confirm_1",
+        "tosspayments-webhook-transmission-time": "2026-04-18T12:00:01.000Z",
+        "tosspayments-webhook-transmission-retried-count": "0",
+      },
+      body: JSON.stringify({
+        eventType: "PAYMENT_STATUS_CHANGED",
+        createdAt: "2026-04-18T12:00:00.100000",
+        data: {
+          orderId: sessionPayload.checkout.orderId,
+          paymentKey: "pay_confirm_then_webhook_1",
+          totalAmount: 9900,
+          status: "DONE",
+          approvedAt: "2026-04-18T12:00:00.000Z",
+        },
+      }),
+    }),
+    env,
+    createExecutionContext(),
+  );
+
+  assert.equal(webhookResponse.status, 200);
+  assert.equal(env.DB.state.subscriptionCycles[0].status, "paid");
+  assert.equal(
+    env.DB.state.subscriptionCycles[0].toss_payment_key,
+    "pay_confirm_then_webhook_1",
+  );
+  assert.equal(env.DB.state.billingEvents.length, 2);
+  assert.equal(
+    env.DB.state.billingEvents.filter((event) => event.source_type === "api")
+      .length,
+    1,
+  );
+  assert.equal(
+    env.DB.state.billingEvents.filter(
+      (event) => event.source_type === "webhook",
+    ).length,
+    1,
+  );
 });
 
 test("checkout result reports a fail redirect and missing Toss env returns a configuration error", async () => {

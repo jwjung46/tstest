@@ -3,7 +3,7 @@
 ## Current status
 
 - Current stage: Stage 2 Toss one-time payment integration completed on top of the existing Stage 9 notes/account/auth baseline and the Stage 1 internal billing foundation.
-- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, signed sign-in vs link state handling, Worker-handled sign-out, internal `users` plus `user_identities`, internal-user-backed sessions, browser-local recent-login provider hinting, linked-provider lookup inside the protected app shell, merge foundations, personal notes with internal-user D1 ownership, and an internal-user-based Stage 2 Toss billing flow. Billing ownership is still internal-user-based only through `billing_customers.user_id`, not provider identity scoped, while Toss-facing `billing_customers.customer_key` is now a short deterministic internal-user-derived value safe for Toss limits. The billing domain includes `billing_customers`, `billing_payment_methods`, `subscription_plans`, `subscriptions`, `subscription_cycles`, `billing_events`, `entitlements`, and `manual_entitlement_overrides`, with real Toss HTTP access isolated behind `worker/src/billing/toss-client.ts`. Current `/app` scope is account/session surfaces, real Toss one-time billing testing, and the personal notes module. `pro_monthly` currently means a one-time 30-day paid access contract, not auto-renew.
+- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, signed sign-in vs link state handling, Worker-handled sign-out, internal `users` plus `user_identities`, internal-user-backed sessions, browser-local recent-login provider hinting, linked-provider lookup inside the protected app shell, merge foundations, personal notes with internal-user D1 ownership, and an internal-user-based Stage 2 Toss billing flow. Billing ownership is still internal-user-based only through `billing_customers.user_id`, not provider identity scoped, while Toss-facing `billing_customers.customer_key` is now a short deterministic internal-user-derived value safe for Toss limits. The billing domain includes `billing_customers`, `billing_payment_methods`, `subscription_plans`, `subscriptions`, `subscription_cycles`, `billing_events`, `entitlements`, and `manual_entitlement_overrides`, with real Toss HTTP access isolated behind `worker/src/billing/toss-client.ts`. Stage 2 webhook ingestion now derives delivery identity from Toss transmission headers, persists `billing_events` before reconciliation, dedupes by durable webhook event key, and marks accepted-but-unused deliveries as `ignored` instead of dropping them. Current `/app` scope is account/session surfaces, real Toss one-time billing testing, and the personal notes module. `pro_monthly` currently means a one-time 30-day paid access contract, not auto-renew.
 
 ## Completed work
 
@@ -142,6 +142,11 @@
 - What: Added real Toss one-time payment checkout/session, frontend checkout launch, success redirect confirm, fail/result handling, webhook normalization and idempotent reconciliation, cycle-to-order/payment linkage, 30-day `pro_monthly` activation rules, billing history updates, and a usable protected billing UI for end-to-end testing in the Worker environment.
 - Why: The product now needs real payment confirmation and entitlement updates without breaking the Stage 1 internal-user billing foundation or binding ownership to provider identity, while still leaving recurring billing approval as future work.
 
+### 28. Stage 2 webhook durability correction
+
+- What: Reworked Toss payment webhook ingestion so `/api/webhooks/toss` preserves raw body plus delivery headers, derives durable webhook identity from `tosspayments-webhook-transmission-id`, creates `billing_events` rows before reconciliation, safely dedupes retries, and records accepted-but-unsupported deliveries with `processing_status = ignored`.
+- Why: Real Toss payment webhooks do not reliably expose a durable event id in the JSON body, so production-safe Stage 2 behavior must key persistence from the actual delivery contract and must not silently lose webhook deliveries before billing-event storage.
+
 ## Decisions fixed so far
 
 - Language: TypeScript.
@@ -158,7 +163,7 @@
 
 - Durable session persistence beyond the current signed-cookie session boundary.
 - End-user merge wizard UI, unlink UI, automatic email-based linking, role systems, refresh-token rotation, or richer profile/settings flows.
-- Real recurring billing approval, billing-key lifecycle, authKey to billingKey confirmation, recurring charge scheduling, recurring cancel/resume semantics, or stricter webhook signature/domain validation.
+- Real recurring billing approval, billing-key lifecycle, authKey to billingKey confirmation, recurring charge scheduling, recurring cancel/resume semantics, or broader webhook source hardening beyond the current Toss payment delivery headers.
 - Any later product expansion beyond the current notes plus billing foundation, such as search, sharing, tags, attachments, or separate note detail routes.
 
 ## Next planned stage

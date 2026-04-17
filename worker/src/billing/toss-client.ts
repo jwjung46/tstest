@@ -63,7 +63,12 @@ export type TossBillingClient = {
       cancelReason: string;
     },
   ): Promise<TossNormalizedPayment>;
-  normalizeWebhookPayload(payload: unknown): TossNormalizedWebhookEvent;
+  normalizeWebhookPayload(input: {
+    payload: unknown;
+    rawBody: string;
+    headers: Headers | Record<string, string>;
+    receivedAt?: string;
+  }): TossNormalizedWebhookEvent;
 };
 
 function assertNonEmptyString(value: unknown, code: string, message: string) {
@@ -218,6 +223,34 @@ function createStableUserHash(userId: string) {
     .padStart(16, "0")}`.slice(0, TOSS_CUSTOMER_KEY_HASH_LENGTH);
 }
 
+function createDeterministicWebhookFallbackKey(rawBody: string) {
+  let hash = 0xcbf29ce484222325n;
+  const prime = 0x100000001b3n;
+  const mask = 0xffffffffffffffffn;
+
+  for (let index = 0; index < rawBody.length; index += 1) {
+    hash ^= BigInt(rawBody.charCodeAt(index));
+    hash = (hash * prime) & mask;
+  }
+
+  return `synthetic_${hash.toString(16).padStart(16, "0")}`;
+}
+
+function toHeaderMap(headers: Headers | Record<string, string>) {
+  if (headers instanceof Headers) {
+    return Object.fromEntries(
+      Array.from(headers.entries()).map(([key, value]) => [
+        key.toLowerCase(),
+        value,
+      ]),
+    );
+  }
+
+  return Object.fromEntries(
+    Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]),
+  );
+}
+
 export function createOrReuseCustomerKey(userId: string) {
   return `${TOSS_CUSTOMER_KEY_PREFIX}${createStableUserHash(userId)}`;
 }
@@ -251,7 +284,28 @@ export function getTossPaymentsConfig(env: WorkerEnv): TossConfig {
   };
 }
 
-function normalizeWebhookPayload(payload: unknown): TossNormalizedWebhookEvent {
+function normalizeWebhookPayload(input: {
+  payload: unknown;
+  rawBody: string;
+  headers: Headers | Record<string, string>;
+  receivedAt?: string;
+}): TossNormalizedWebhookEvent {
+  const headerMap = toHeaderMap(input.headers);
+
+  const transmissionId =
+    headerMap["tosspayments-webhook-transmission-id"] ?? null;
+  const transmissionTime =
+    headerMap["tosspayments-webhook-transmission-time"] ?? null;
+  const retriedCountHeader =
+    headerMap["tosspayments-webhook-transmission-retried-count"] ?? null;
+  const retriedCount =
+    retriedCountHeader && /^\d+$/.test(retriedCountHeader)
+      ? Number(retriedCountHeader)
+      : null;
+  const receivedAt =
+    input.receivedAt ?? transmissionTime ?? new Date().toISOString();
+  const payload = input.payload;
+
   if (!payload || typeof payload !== "object") {
     throw new TossBillingError(
       "invalid_request",
@@ -271,18 +325,10 @@ function normalizeWebhookPayload(payload: unknown): TossNormalizedWebhookEvent {
     "Toss webhook createdAt is required.",
   );
   const eventKeySource =
-    typeof raw.eventId === "string"
-      ? raw.eventId
-      : typeof raw.eventKey === "string"
-        ? raw.eventKey
-        : null;
-
-  if (!eventKeySource) {
-    throw new TossBillingError(
-      "invalid_request",
-      "Toss webhook eventId is required.",
-    );
-  }
+    transmissionId ??
+    (typeof raw.eventId === "string" ? raw.eventId : null) ??
+    (typeof raw.eventKey === "string" ? raw.eventKey : null) ??
+    createDeterministicWebhookFallbackKey(input.rawBody);
 
   const data =
     raw.data && typeof raw.data === "object"
@@ -293,13 +339,34 @@ function normalizeWebhookPayload(payload: unknown): TossNormalizedWebhookEvent {
     eventKey: eventKeySource,
     eventType,
     createdAt,
+    receivedAt,
+    delivery: {
+      transmissionId,
+      transmissionTime,
+      retriedCount,
+      headers: headerMap,
+      rawBody: input.rawBody,
+    },
     orderId: typeof data?.orderId === "string" ? data.orderId : null,
     paymentKey: typeof data?.paymentKey === "string" ? data.paymentKey : null,
     paymentStatus: typeof data?.status === "string" ? data.status : null,
     totalAmount:
       typeof data?.totalAmount === "number" ? data.totalAmount : null,
     approvedAt: typeof data?.approvedAt === "string" ? data.approvedAt : null,
-    raw,
+    customerKey:
+      typeof data?.customerKey === "string" ? data.customerKey : null,
+    methodKey: typeof data?.methodKey === "string" ? data.methodKey : null,
+    raw: {
+      delivery: {
+        transmissionId,
+        transmissionTime,
+        retriedCount,
+        headers: headerMap,
+        rawBody: input.rawBody,
+        receivedAt,
+      },
+      body: raw,
+    },
   };
 }
 

@@ -39,6 +39,8 @@ Stage 2 keeps the Stage 1 schema and internal ownership model intact, then attac
 - successful one-time payment sets `current_period_end = success time + 30 days`
 - entitlements remain the final feature-access layer
 - Toss `customerKey` is a short deterministic internal-user-derived key, while ownership still stays anchored by `billing_customers.user_id`
+- payment webhooks are durably recorded in `billing_events` before reconciliation, with delivery identity derived from `tosspayments-webhook-transmission-id`
+- `billing_events.processing_status` now distinguishes `processed`, `failed`, and `ignored` for accepted-but-not-acted-on webhook deliveries
 - recurring charge approval, billing keys, and scheduler-driven renewal are not implemented yet
 
 The Worker billing domain lives under `worker/src/billing`:
@@ -72,7 +74,9 @@ Authenticated billing endpoints derive the current internal user from the sessio
 5. On success, the frontend calls `POST /api/billing/checkout/confirm`.
 6. The Worker confirms with Toss using the secret key, validates `paymentKey`, `orderId`, and `amount`, then marks the cycle paid and the subscription active.
 7. Entitlements are recomputed from the internal subscription state.
-8. `POST /api/webhooks/toss` stores the raw payload, dedupes by event key, and safely reconciles later delivery against the same internal cycle/subscription records.
+8. `POST /api/webhooks/toss` reads the raw body plus Toss delivery headers, derives the durable webhook identity from `tosspayments-webhook-transmission-id`, stores a `billing_events` row first, then dedupes and reconciles supported payment events.
+9. Supported `PAYMENT_STATUS_CHANGED` events reconcile against the existing internal cycle and subscription records without changing ownership semantics.
+10. Accepted but currently-unused webhook deliveries are persisted with `processing_status = ignored` instead of failing delivery.
 
 ### Toss Environment Keys
 
@@ -132,6 +136,7 @@ Not in scope yet:
 - `worker/migrations/0001_notes.sql`
 - `worker/migrations/0002_account_linking.sql`
 - `worker/migrations/0003_billing_core.sql`
+- `worker/migrations/0004_billing_event_processing_ignored.sql`
 
 ## Local Development
 
@@ -159,7 +164,7 @@ node --test tests/auth-session.test.mjs tests/oauth-worker.test.mjs tests/notes-
 - Toss billing-key lifecycle
 - scheduler-driven renewals
 - recurring cancel/resume semantics
-- real webhook signature/domain verification hardening
+- broader webhook source hardening beyond the current Toss payment delivery contract, which exposes transmission-id headers for payment webhooks but not the payout/seller signature header
 - durable session persistence beyond the current signed-cookie session boundary
 
 ## Project Docs

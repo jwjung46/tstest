@@ -259,6 +259,22 @@ test("billing migration creates the Stage 1 internal subscription tables and see
   assert.match(migration, /'pro_monthly'/i);
 });
 
+test("billing webhook status migration allows ignored durable-ingestion state", () => {
+  const migration = fs.readFileSync(
+    path.join(
+      process.cwd(),
+      "worker",
+      "migrations",
+      "0004_billing_event_processing_ignored.sql",
+    ),
+    "utf8",
+  );
+
+  assert.match(migration, /UPDATE billing_events/i);
+  assert.match(migration, /processing_status/i);
+  assert.match(migration, /ignored/i);
+});
+
 test("recomputeEntitlements grants free defaults without requiring provider-scoped billing state", async () => {
   const db = createBillingDbMock({
     subscriptionPlans: [

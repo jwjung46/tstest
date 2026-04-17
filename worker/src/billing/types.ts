@@ -18,7 +18,11 @@ export type SubscriptionCycleStatus =
   | "failed"
   | "canceled";
 
-export type BillingEventProcessingStatus = "pending" | "processed" | "failed";
+export type BillingEventProcessingStatus =
+  | "pending"
+  | "processed"
+  | "failed"
+  | "ignored";
 
 export type EntitlementStatus = "active" | "inactive";
 
@@ -258,11 +262,21 @@ export type TossNormalizedWebhookEvent = {
   eventKey: string;
   eventType: string;
   createdAt: string;
+  receivedAt: string;
+  delivery: {
+    transmissionId: string | null;
+    transmissionTime: string | null;
+    retriedCount: number | null;
+    headers: Record<string, string>;
+    rawBody: string;
+  };
   orderId: string | null;
   paymentKey: string | null;
   paymentStatus: string | null;
   totalAmount: number | null;
   approvedAt: string | null;
+  customerKey: string | null;
+  methodKey: string | null;
   raw: Record<string, unknown>;
 };
 

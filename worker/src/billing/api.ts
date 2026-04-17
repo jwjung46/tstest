@@ -48,6 +48,14 @@ async function readJsonBody(request: Request) {
   }
 }
 
+async function readRawBody(request: Request) {
+  try {
+    return await request.text();
+  } catch {
+    return "";
+  }
+}
+
 function matchCancelPath(pathname: string) {
   const match = pathname.match(
     /^\/api\/billing\/subscriptions\/([^/]+)\/cancel$/,
@@ -112,11 +120,20 @@ export async function handleBillingRequest(
       return errorResponse(405, "method_not_allowed", "Method not allowed.");
     }
 
-    const body = await readJsonBody(request);
+    const rawBody = await readRawBody(request);
+    let body: unknown = null;
+
+    try {
+      body = rawBody ? JSON.parse(rawBody) : null;
+    } catch {
+      body = null;
+    }
 
     try {
       const result = await processTossWebhook(env.DB, {
         payload: body,
+        rawBody,
+        headers: request.headers,
       });
 
       return jsonResponse({

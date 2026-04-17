@@ -22,6 +22,7 @@ import {
   findBillingCustomerByUserId,
   findBillingEventByKey,
   findCycleByOrderId,
+  findCycleByPaymentKey,
   findLatestSubscriptionForUser,
   findPlanByCode,
   findSubscriptionById,
@@ -237,7 +238,7 @@ function mapEvent(record: {
   related_subscription_id: string | null;
   related_cycle_id: string | null;
   payload_json: string;
-  processing_status: "pending" | "processed" | "failed";
+  processing_status: "pending" | "processed" | "failed" | "ignored";
   processing_attempts: number;
   last_error_message: string | null;
   received_at: string;
@@ -382,6 +383,21 @@ async function markBillingEventFailed(
   await updateBillingEventProcessing(db, {
     eventId,
     processingStatus: "failed",
+    processingAttempts: 1,
+    lastErrorMessage: message,
+    processedAt: receivedAt,
+  });
+}
+
+async function markBillingEventIgnored(
+  db: D1Database,
+  eventId: string,
+  receivedAt: string,
+  message: string | null = null,
+) {
+  await updateBillingEventProcessing(db, {
+    eventId,
+    processingStatus: "ignored",
     processingAttempts: 1,
     lastErrorMessage: message,
     processedAt: receivedAt,
@@ -1020,16 +1036,29 @@ export async function processTossWebhook(
   db: D1Database,
   {
     payload,
+    rawBody,
+    headers,
     now = new Date().toISOString(),
   }: {
     payload: unknown;
+    rawBody: string;
+    headers: Headers | Record<string, string>;
     now?: string;
   },
 ) {
-  const normalized = tossClient.normalizeWebhookPayload(payload);
-  const relatedCycle = normalized.orderId
-    ? await findCycleByOrderId(db, normalized.orderId)
-    : null;
+  const normalized = tossClient.normalizeWebhookPayload({
+    payload,
+    rawBody,
+    headers,
+    receivedAt: now,
+  });
+  const relatedCycle =
+    (normalized.orderId
+      ? await findCycleByOrderId(db, normalized.orderId)
+      : null) ??
+    (normalized.paymentKey
+      ? await findCycleByPaymentKey(db, normalized.paymentKey)
+      : null);
   const relatedSubscription = relatedCycle
     ? await findSubscriptionById(db, relatedCycle.subscription_id)
     : null;
@@ -1041,7 +1070,7 @@ export async function processTossWebhook(
     relatedSubscriptionId: relatedSubscription?.id ?? null,
     relatedCycleId: relatedCycle?.id ?? null,
     payload: normalized.raw,
-    receivedAt: normalized.createdAt,
+    receivedAt: normalized.receivedAt,
   });
 
   if (event.duplicate) {
@@ -1052,10 +1081,13 @@ export async function processTossWebhook(
   }
 
   try {
-    if (
+    const isPaymentStatusChanged =
       normalized.eventType === "PAYMENT_STATUS_CHANGED" &&
       relatedCycle &&
-      relatedSubscription &&
+      relatedSubscription;
+
+    if (
+      isPaymentStatusChanged &&
       normalized.paymentStatus === "DONE" &&
       normalized.paymentKey &&
       normalized.totalAmount !== null
@@ -1075,10 +1107,13 @@ export async function processTossWebhook(
         },
         now,
       });
+      await markBillingEventProcessed(
+        db,
+        event.event.id,
+        normalized.receivedAt,
+      );
     } else if (
-      normalized.eventType === "PAYMENT_STATUS_CHANGED" &&
-      relatedCycle &&
-      relatedSubscription &&
+      isPaymentStatusChanged &&
       (normalized.paymentStatus === "ABORTED" ||
         normalized.paymentStatus === "EXPIRED" ||
         normalized.paymentStatus === "CANCELED")
@@ -1091,17 +1126,46 @@ export async function processTossWebhook(
         message: `Toss Payments reported ${normalized.paymentStatus}.`,
         now,
       });
+      await markBillingEventProcessed(
+        db,
+        event.event.id,
+        normalized.receivedAt,
+      );
+    } else {
+      await markBillingEventIgnored(
+        db,
+        event.event.id,
+        normalized.receivedAt,
+        isPaymentStatusChanged
+          ? `Webhook status ${normalized.paymentStatus ?? "unknown"} is not acted on in Stage 2.`
+          : `Webhook event type ${normalized.eventType} is not acted on in Stage 2.`,
+      );
     }
-
-    await markBillingEventProcessed(db, event.event.id, normalized.createdAt);
 
     return {
       duplicate: false,
       event: mapEvent({
         ...event.event,
-        processing_status: "processed",
+        processing_status:
+          isPaymentStatusChanged &&
+          (normalized.paymentStatus === "DONE" ||
+            normalized.paymentStatus === "ABORTED" ||
+            normalized.paymentStatus === "EXPIRED" ||
+            normalized.paymentStatus === "CANCELED")
+            ? "processed"
+            : "ignored",
         processing_attempts: 1,
-        processed_at: normalized.createdAt,
+        last_error_message:
+          isPaymentStatusChanged &&
+          (normalized.paymentStatus === "DONE" ||
+            normalized.paymentStatus === "ABORTED" ||
+            normalized.paymentStatus === "EXPIRED" ||
+            normalized.paymentStatus === "CANCELED")
+            ? null
+            : isPaymentStatusChanged
+              ? `Webhook status ${normalized.paymentStatus ?? "unknown"} is not acted on in Stage 2.`
+              : `Webhook event type ${normalized.eventType} is not acted on in Stage 2.`,
+        processed_at: normalized.receivedAt,
       }),
     };
   } catch (error) {
@@ -1109,7 +1173,7 @@ export async function processTossWebhook(
     await markBillingEventFailed(
       db,
       event.event.id,
-      normalized.createdAt,
+      normalized.receivedAt,
       billingError.message,
     );
     throw billingError;
