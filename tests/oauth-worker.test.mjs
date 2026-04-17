@@ -97,6 +97,128 @@ test("callback rejects requests with invalid state before token exchange", async
   );
 });
 
+test("callback maps provider-declared failures to a safe public auth error", async () => {
+  const response = await worker.fetch(
+    new Request(
+      "https://example.com/auth/google/callback?error=server_error&error_description=raw-provider-detail",
+    ),
+    createEnv(),
+    createExecutionContext(),
+  );
+
+  assert.equal(response.status, 302);
+  assert.equal(
+    response.headers.get("location"),
+    "/?authError=oauth_callback_failed&authProvider=google",
+  );
+});
+
+test("callback redirects cleanly when token exchange fails", async () => {
+  const startResponse = await worker.fetch(
+    new Request("https://example.com/auth/google/start"),
+    createEnv(),
+    createExecutionContext(),
+  );
+  const providerUrl = new URL(startResponse.headers.get("location"));
+  const state = providerUrl.searchParams.get("state");
+  assert.ok(state, "expected OAuth state parameter");
+
+  const originalFetch = global.fetch;
+  global.fetch = async (input) => {
+    const url = typeof input === "string" ? input : input.url;
+
+    if (url === "https://oauth2.googleapis.com/token") {
+      return new Response("upstream failure", { status: 500 });
+    }
+
+    throw new Error(`Unexpected outbound fetch: ${url}`);
+  };
+
+  try {
+    const cookieHeader = readCookie(startResponse, "__oauth_state")
+      .split(";")
+      .at(0);
+
+    const callbackResponse = await worker.fetch(
+      new Request(
+        `https://example.com/auth/google/callback?code=callback-code&state=${state}`,
+        {
+          headers: {
+            cookie: cookieHeader,
+          },
+        },
+      ),
+      createEnv(),
+      createExecutionContext(),
+    );
+
+    assert.equal(callbackResponse.status, 302);
+    assert.equal(
+      callbackResponse.headers.get("location"),
+      "/?authError=token_exchange_failed&authProvider=google",
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("callback redirects cleanly when userinfo fetch fails", async () => {
+  const startResponse = await worker.fetch(
+    new Request("https://example.com/auth/google/start"),
+    createEnv(),
+    createExecutionContext(),
+  );
+  const providerUrl = new URL(startResponse.headers.get("location"));
+  const state = providerUrl.searchParams.get("state");
+  assert.ok(state, "expected OAuth state parameter");
+
+  const originalFetch = global.fetch;
+  global.fetch = async (input, init) => {
+    const url = typeof input === "string" ? input : input.url;
+
+    if (url === "https://oauth2.googleapis.com/token") {
+      assert.match(String(init?.body), /code=callback-code/);
+      return Response.json({
+        access_token: "google-access-token",
+        token_type: "Bearer",
+      });
+    }
+
+    if (url === "https://openidconnect.googleapis.com/v1/userinfo") {
+      return new Response("userinfo unavailable", { status: 502 });
+    }
+
+    throw new Error(`Unexpected outbound fetch: ${url}`);
+  };
+
+  try {
+    const cookieHeader = readCookie(startResponse, "__oauth_state")
+      .split(";")
+      .at(0);
+
+    const callbackResponse = await worker.fetch(
+      new Request(
+        `https://example.com/auth/google/callback?code=callback-code&state=${state}`,
+        {
+          headers: {
+            cookie: cookieHeader,
+          },
+        },
+      ),
+      createEnv(),
+      createExecutionContext(),
+    );
+
+    assert.equal(callbackResponse.status, 302);
+    assert.equal(
+      callbackResponse.headers.get("location"),
+      "/?authError=userinfo_fetch_failed&authProvider=google",
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test("callback exchanges the code, creates a session cookie, and returns to the original target", async () => {
   const startResponse = await worker.fetch(
     new Request(

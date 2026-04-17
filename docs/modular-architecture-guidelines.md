@@ -237,14 +237,14 @@ feature는 자기 책임만 가져야 한다.
 
 ### 추천 인터페이스
 
-초기에는 실제 구현이 임시여도, 함수 형태는 미리 아래처럼 잡아두는 편이 좋다.
+실제 구현이 바뀌더라도, 함수 형태는 아래처럼 안정적으로 유지하는 편이 좋다.
 
 - `getSession()`
 - `getCurrentUser()`
 - `isAuthenticated()`
 - `signOut()`
 
-이렇게 해두면 현재는 임시 값으로 구현하더라도, 나중에 Cloudflare 기준의 실제 인증 구조로 바뀔 때 UI를 덜 뜯게 된다.
+이렇게 해두면 현재처럼 Cloudflare Worker 경계 뒤의 실제 OAuth/session 구조를 쓰더라도, 이후 세션 보강이나 로그아웃 UX 추가 때 UI를 덜 뜯게 된다.
 
 ### 하지 말아야 할 것
 
@@ -505,7 +505,7 @@ feature는 자기 책임만 가져야 한다.
 1. `src` 폴더 구조를 위 원칙에 맞게 천천히 정리한다.
 2. `app`, `pages`, `features`, `shared`, `platform`의 역할을 고정한다.
 3. 3단계 UI를 만들 때부터 `PageContainer`, `AuthButton`, `AppShell` 정도만 공용화한다.
-4. `auth.ts`는 나중에 세션 계층으로 키울 수 있게 인터페이스를 미리 안정적으로 잡는다.
+4. `auth.ts` 같은 경계 모듈은 이미 붙은 실제 Worker 기반 auth/session 흐름을 감춘 채, 이후 단계 변화에도 인터페이스를 안정적으로 유지한다.
 5. 다음 기능부터는 page 안이 아니라 feature 안에 실질 구현을 넣는다.
 
 ---
@@ -545,5 +545,5 @@ feature는 자기 책임만 가져야 한다.
 - 보호 라우트가 `loading`, `authenticated`, `unauthenticated`를 구분하는지 확인한다.
 - 인증 실패 리다이렉트 시 원래 목적지 정보(`pathname`, `search`, `hash`)를 보존하는지 확인한다.
 - 세션 경계와 UI 로직이 섞이지 않았는지 확인한다.
-- 현재 단계 범위를 넘는 구현(OAuth, provider 연결, mock 로그인, secret 처리)이 들어가지 않았는지 확인한다.
+- 현재 단계 범위를 넘는 구현(내구성 세션 저장소, 계정 메뉴 확장, 보호 앱 기능 대형 확장)이 들어가지 않았는지 확인한다.
 - `npm run format`, `npm run lint`, `npm run typecheck`, `npm run build`를 통과했는지 확인한다.

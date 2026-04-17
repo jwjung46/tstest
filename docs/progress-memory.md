@@ -2,8 +2,8 @@
 
 ## Current status
 
-- Current stage: Phase 4 stability pass completed for the auth/session boundary.
-- Verified state: The app has a public `/` route, a protected `/app` route, a session-oriented auth model, and a tri-state auth structure ready for the next real authentication phase.
+- Current stage: Phase 5 OAuth integration completed with a focused cleanup pass.
+- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, and a tri-state auth structure already attached to the real session boundary.
 
 ## Completed work
 
@@ -92,6 +92,16 @@
 - What: Added tri-state auth interpretation (`loading`, `authenticated`, `unauthenticated`), preserved full redirect targets, and separated platform session snapshots from auth interpretation.
 - Why: This reduces route churn in the next authentication phase and makes the current boundary safer to extend.
 
+### 18. Phase 5 OAuth provider integration
+
+- What: Added real Google / Kakao / Naver OAuth start and callback flows behind the Worker auth boundary, created signed OAuth state handling, and issued signed session cookies from the callback flow.
+- Why: This attaches real provider login to the existing auth/session contract without pushing provider-specific logic into page components.
+
+### 19. Worker routing fix for auth and session APIs
+
+- What: Updated `wrangler.jsonc` so `/auth/*` and `/api/*` hit the Worker before the SPA fallback route.
+- Why: OAuth callbacks and session reads must execute at the Worker boundary instead of being swallowed by the client-side app shell.
+
 ## Decisions fixed so far
 
 - Language: TypeScript.
@@ -106,11 +116,10 @@
 
 ## Not done yet
 
-- Google / Kakao / Naver OAuth integration.
-- Real session loading and persistence.
-- Cloudflare deployment configuration for production.
+- Durable session persistence beyond the current signed-cookie session boundary.
+- Logout UX and richer authenticated account controls.
 - Protected app internal modules and feature screens.
 
 ## Next planned stage
 
-- Attach real authentication and session persistence to the existing tri-state auth/session boundary.
+- Keep the current Worker-based auth/session boundary and move to richer protected-app features or more durable session/account capabilities in a later phase.

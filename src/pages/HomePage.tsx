@@ -18,8 +18,9 @@ export default function HomePage() {
           <span className="landing-hero__brand">Teamspace</span>
           <h1>One place to enter your protected work area.</h1>
           <p className="page-copy">
-            Start from a clear landing page now, then plug in real OAuth and
-            actual feature modules later without rewriting the page structure.
+            Start from a clear landing page with real OAuth entry already wired
+            through the Worker boundary, then add real feature modules later
+            without rewriting the page structure.
           </p>
         </div>
 
@@ -68,10 +69,11 @@ export default function HomePage() {
             </p>
           </article>
           <article className="capability-card">
-            <h3>Connect real authentication later</h3>
+            <h3>Grow the post-login experience later</h3>
             <p>
-              The login entry now starts real OAuth, while richer post-login UX
-              can arrive later without changing the route boundary again.
+              Real OAuth login start is already connected, while richer
+              post-login UX can arrive later without changing the route boundary
+              again.
             </p>
           </article>
         </div>

@@ -1,4 +1,5 @@
 import { handleOAuthCallback, handleOAuthStart } from "./oauth/flow.ts";
+import type { WorkerEnv } from "./env.ts";
 import { createSessionSnapshotResponse } from "./oauth/session.ts";
 import { isOAuthProviderId } from "./oauth/providers.ts";
 
@@ -21,33 +22,21 @@ function matchAuthRoute(pathname: string) {
   };
 }
 
-async function handleRequest(request: Request, env: Env) {
-  const runtimeEnv = env as Env & {
-    AUTH_COOKIE_SECRET: string;
-    GOOGLE_OAUTH_CLIENT_ID: string;
-    GOOGLE_OAUTH_CLIENT_SECRET: string;
-    KAKAO_OAUTH_CLIENT_ID: string;
-    KAKAO_OAUTH_CLIENT_SECRET: string;
-    NAVER_OAUTH_CLIENT_ID: string;
-    NAVER_OAUTH_CLIENT_SECRET: string;
-  };
+async function handleRequest(request: Request, env: WorkerEnv) {
   const url = new URL(request.url);
 
   if (url.pathname === "/api/session" && request.method === "GET") {
-    return createSessionSnapshotResponse(
-      runtimeEnv.AUTH_COOKIE_SECRET,
-      request,
-    );
+    return createSessionSnapshotResponse(env.AUTH_COOKIE_SECRET, request);
   }
 
   const authRoute = matchAuthRoute(url.pathname);
 
   if (authRoute?.action === "start" && request.method === "GET") {
-    return handleOAuthStart(authRoute.providerId, runtimeEnv, request);
+    return handleOAuthStart(authRoute.providerId, env, request);
   }
 
   if (authRoute?.action === "callback" && request.method === "GET") {
-    return handleOAuthCallback(authRoute.providerId, runtimeEnv, request);
+    return handleOAuthCallback(authRoute.providerId, env, request);
   }
 
   return new Response("Not found", {
@@ -56,7 +45,7 @@ async function handleRequest(request: Request, env: Env) {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: WorkerEnv): Promise<Response> {
     return handleRequest(request, env);
   },
-} satisfies ExportedHandler<Env>;
+} satisfies ExportedHandler<WorkerEnv>;

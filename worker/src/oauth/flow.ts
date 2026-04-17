@@ -11,6 +11,7 @@ import {
   type OAuthProviderConfig,
   type OAuthProviderId,
 } from "./providers.ts";
+import type { WorkerEnv, WorkerEnvKey } from "../env.ts";
 import { createSessionCookie, type WorkerSession } from "./session.ts";
 
 type OAuthStatePayload = {
@@ -23,26 +24,12 @@ type OAuthTokenResponse = {
   access_token: string;
 };
 
-type OAuthWorkerEnv = Pick<Env, never> & {
-  AUTH_COOKIE_SECRET: string;
-  GOOGLE_OAUTH_CLIENT_ID: string;
-  GOOGLE_OAUTH_CLIENT_SECRET: string;
-  KAKAO_OAUTH_CLIENT_ID: string;
-  KAKAO_OAUTH_CLIENT_SECRET: string;
-  NAVER_OAUTH_CLIENT_ID: string;
-  NAVER_OAUTH_CLIENT_SECRET: string;
-};
-
-type OAuthWorkerEnvKey = keyof Pick<
-  OAuthWorkerEnv,
-  | "AUTH_COOKIE_SECRET"
-  | "GOOGLE_OAUTH_CLIENT_ID"
-  | "GOOGLE_OAUTH_CLIENT_SECRET"
-  | "KAKAO_OAUTH_CLIENT_ID"
-  | "KAKAO_OAUTH_CLIENT_SECRET"
-  | "NAVER_OAUTH_CLIENT_ID"
-  | "NAVER_OAUTH_CLIENT_SECRET"
->;
+type OAuthFailureReason =
+  | "access_denied"
+  | "invalid_state"
+  | "oauth_callback_failed"
+  | "token_exchange_failed"
+  | "userinfo_fetch_failed";
 
 function toHex(bytes: Uint8Array) {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
@@ -60,12 +47,12 @@ function isSecureRequest(url: URL) {
   return url.protocol === "https:";
 }
 
-function getClientId(env: OAuthWorkerEnv, provider: OAuthProviderConfig) {
-  return env[provider.clientIdEnv as OAuthWorkerEnvKey];
+function getClientId(env: WorkerEnv, provider: OAuthProviderConfig) {
+  return env[provider.clientIdEnv as WorkerEnvKey];
 }
 
-function getClientSecret(env: OAuthWorkerEnv, provider: OAuthProviderConfig) {
-  return env[provider.clientSecretEnv as OAuthWorkerEnvKey];
+function getClientSecret(env: WorkerEnv, provider: OAuthProviderConfig) {
+  return env[provider.clientSecretEnv as WorkerEnvKey];
 }
 
 function normalizeRedirectTarget(value: string | null) {
@@ -78,7 +65,7 @@ function normalizeRedirectTarget(value: string | null) {
 
 function buildProviderFailureLocation(
   provider: OAuthProviderId,
-  reason: string,
+  reason: OAuthFailureReason,
 ) {
   const params = new URLSearchParams({
     authError: reason,
@@ -86,6 +73,34 @@ function buildProviderFailureLocation(
   });
 
   return `/?${params.toString()}`;
+}
+
+function mapProviderCallbackError(error: string): OAuthFailureReason {
+  if (error === "access_denied") {
+    return "access_denied";
+  }
+
+  return "oauth_callback_failed";
+}
+
+function buildFailureCookies(requestUrl: URL) {
+  return [
+    serializeCookie(OAUTH_COOKIE_NAME, "", {
+      maxAge: 0,
+      secure: isSecureRequest(requestUrl),
+    }),
+  ];
+}
+
+function redirectToProviderFailure(
+  providerId: OAuthProviderId,
+  reason: OAuthFailureReason,
+  requestUrl: URL,
+) {
+  return redirectWithCookies(
+    buildProviderFailureLocation(providerId, reason),
+    buildFailureCookies(requestUrl),
+  );
 }
 
 function appendSetCookie(headers: Headers, value: string) {
@@ -109,7 +124,7 @@ function redirectWithCookies(location: string, cookies: string[]) {
 
 async function exchangeAuthorizationCode(
   provider: OAuthProviderConfig,
-  env: OAuthWorkerEnv,
+  env: WorkerEnv,
   requestUrl: URL,
   code: string,
 ) {
@@ -236,7 +251,7 @@ async function fetchProviderSession(
 
 export async function handleOAuthStart(
   providerId: OAuthProviderId,
-  env: OAuthWorkerEnv,
+  env: WorkerEnv,
   request: Request,
 ) {
   const requestUrl = new URL(request.url);
@@ -272,7 +287,7 @@ export async function handleOAuthStart(
 
 export async function handleOAuthCallback(
   providerId: OAuthProviderId,
-  env: OAuthWorkerEnv,
+  env: WorkerEnv,
   request: Request,
 ) {
   const requestUrl = new URL(request.url);
@@ -280,14 +295,10 @@ export async function handleOAuthCallback(
   const error = requestUrl.searchParams.get("error");
 
   if (error) {
-    return redirectWithCookies(
-      buildProviderFailureLocation(providerId, error),
-      [
-        serializeCookie(OAUTH_COOKIE_NAME, "", {
-          maxAge: 0,
-          secure: isSecureRequest(requestUrl),
-        }),
-      ],
+    return redirectToProviderFailure(
+      providerId,
+      mapProviderCallbackError(error),
+      requestUrl,
     );
   }
 
@@ -306,24 +317,32 @@ export async function handleOAuthCallback(
     statePayload.provider !== providerId ||
     statePayload.state !== state
   ) {
-    return redirectWithCookies(
-      buildProviderFailureLocation(providerId, "invalid_state"),
-      [
-        serializeCookie(OAUTH_COOKIE_NAME, "", {
-          maxAge: 0,
-          secure: isSecureRequest(requestUrl),
-        }),
-      ],
+    return redirectToProviderFailure(providerId, "invalid_state", requestUrl);
+  }
+
+  let token: OAuthTokenResponse;
+
+  try {
+    token = await exchangeAuthorizationCode(provider, env, requestUrl, code);
+  } catch {
+    return redirectToProviderFailure(
+      providerId,
+      "token_exchange_failed",
+      requestUrl,
     );
   }
 
-  const token = await exchangeAuthorizationCode(
-    provider,
-    env,
-    requestUrl,
-    code,
-  );
-  const session = await fetchProviderSession(provider, token.access_token);
+  let session: WorkerSession;
+
+  try {
+    session = await fetchProviderSession(provider, token.access_token);
+  } catch {
+    return redirectToProviderFailure(
+      providerId,
+      "userinfo_fetch_failed",
+      requestUrl,
+    );
+  }
 
   return redirectWithCookies(statePayload.redirectTo, [
     await createSessionCookie(
