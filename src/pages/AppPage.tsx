@@ -3,6 +3,7 @@ import AuthenticatedSessionPanel from "../features/auth/ui/AuthenticatedSessionP
 import { BillingOverviewPanel } from "../features/billing/index.ts";
 import { NotesWorkspace } from "../features/notes/index.ts";
 import SignOutForm from "../features/auth/ui/SignOutForm";
+import { ThemeSelector } from "../features/settings/index.ts";
 
 export default function AppPage() {
   return (
@@ -28,7 +29,12 @@ export default function AppPage() {
           description: "Keeps the modular app shell shape stable.",
         },
       ]}
-      headerActions={<SignOutForm />}
+      headerActions={
+        <div className="app-shell__header-controls">
+          <ThemeSelector />
+          <SignOutForm />
+        </div>
+      }
     >
       <AuthenticatedSessionPanel />
       <BillingOverviewPanel />
