@@ -2,8 +2,8 @@
 
 ## Current status
 
-- Current stage: Development environment completed, right before Step 2.
-- Verified state: The Vite + React + TypeScript sample app runs successfully in the browser on localhost.
+- Current stage: Step 2 completed for the base route skeleton.
+- Verified state: The app now has a public `/` route and a protected `/app` route wired through React Router.
 
 ## Completed work
 
@@ -54,7 +54,7 @@
 
 ### 10. Pre-commit hook
 
-- What: Changed `.husky/pre-commit` to run `npx lint-staged`.
+- What: Changed `.husky/pre-commit` to run `./node_modules/.bin/lint-staged`.
 - Why: This ensures code quality and formatting checks happen automatically before a commit is created.
 
 ### 11. Local secret policy
@@ -72,11 +72,17 @@
 - What: Successfully ran `npm run typecheck`, `npm run lint`, `npm run format`, and `npm run format:check`.
 - Why: This confirms that the current development environment is functioning correctly before moving on to app structure work.
 
+### 14. Step 2 route skeleton
+
+- What: Added `react-router-dom`, split the app into route-specific pages, and created a guarded `/app` route backed by a placeholder auth module.
+- Why: This gives the project a production-oriented route boundary now, while keeping real authentication implementation for the next step.
+
 ## Decisions fixed so far
 
 - Language: TypeScript.
 - UI framework: React.
 - Local dev environment: Vite dev server.
+- Routing: React Router with `createBrowserRouter`.
 - Formatting tool: Prettier.
 - Lint tool: ESLint.
 - Commit hook tool: Husky.
@@ -85,13 +91,12 @@
 
 ## Not done yet
 
-- Landing page implementation.
-- Login UI implementation.
-- Public/protected route structure.
+- Public landing page content design.
 - Google / Kakao / Naver OAuth integration.
-- Session handling and protected page access control.
+- Session handling and real protected route access control.
 - Cloudflare deployment configuration for production.
+- Protected app internal modules and feature screens.
 
 ## Next planned stage
 
-- Step 2: Create the basic route structure for the public landing area and the protected app area.
+- Step 3: Replace the placeholder auth check with a real authentication/session foundation aligned to Cloudflare.
