@@ -140,6 +140,18 @@ export function buildSignOutPath() {
   return "/auth/sign-out";
 }
 
+export function getDefaultPostAuthRedirectTarget(state: unknown): string {
+  if (
+    state &&
+    typeof state === "object" &&
+    typeof (state as { from?: unknown }).from === "string"
+  ) {
+    return (state as { from: string }).from;
+  }
+
+  return "/app";
+}
+
 export function getHomeRouteBehavior(authState: AuthState): HomeRouteBehavior {
   if (authState.status === "authenticated") {
     return {
@@ -164,4 +176,20 @@ export function getAuthErrorMessage(authError: string): string {
     AUTH_ERROR_MESSAGES[authError as keyof typeof AUTH_ERROR_MESSAGES] ??
     DEFAULT_AUTH_ERROR_MESSAGE
   );
+}
+
+export function getPublicAuthFeedback({
+  authError,
+  authProviderLabel,
+}: {
+  authError: string | null;
+  authProviderLabel: string | null;
+}): string | null {
+  if (!authError) {
+    return null;
+  }
+
+  return `${getAuthErrorMessage(authError)} ${
+    authProviderLabel ? `Provider: ${authProviderLabel}.` : ""
+  }`.trim();
 }

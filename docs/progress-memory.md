@@ -2,8 +2,8 @@
 
 ## Current status
 
-- Current stage: Phase 6 first authenticated user experience completed on top of the existing Worker auth/session boundary.
-- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, a Worker-handled sign-out endpoint, authenticated-home handling for `/`, and a tri-state auth structure attached to the real session boundary.
+- Current stage: Phase 8 structure stabilization completed on top of the existing Worker auth/session boundary.
+- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, a Worker-handled sign-out endpoint, authenticated-home handling for `/`, a tri-state auth structure attached to the real session boundary, and an intentionally empty authenticated app shell that only shows current-user/session UX plus sign-out.
 
 ## Completed work
 
@@ -107,6 +107,11 @@
 - What: Added a Worker-handled sign-out route, surfaced the signed-in user name and provider inside the protected app shell, redirected authenticated home visits to `/app`, and centralized public auth error messaging.
 - Why: This adds the first useful post-login experience without changing the existing Worker-based OAuth/session architecture.
 
+### 21. Phase 7 and Phase 8 completion pass
+
+- What: Kept the Worker-based OAuth/session mechanics intact while moving protected-route composition into `app/router`, keeping auth-specific UI and auth-specific page interpretation inside `features/auth`, and reducing page-layer logic so `/` and `/app` act as composition entry points only.
+- Why: This locks the repository into a reusable authenticated web-app base before any Stage 9 product module work begins.
+
 ## Decisions fixed so far
 
 - Language: TypeScript.
@@ -122,9 +127,9 @@
 ## Not done yet
 
 - Durable session persistence beyond the current signed-cookie session boundary.
-- Larger protected app internal modules and feature screens.
-- Durable account management capabilities such as account linking, role systems, or richer profile/settings flows.
+- Any real protected feature module or product/domain screen inside `/app`.
+- Durable account management capabilities such as account linking, role systems, refresh-token rotation, or richer profile/settings flows.
 
 ## Next planned stage
 
-- Keep the current Worker-based auth/session boundary and build the next protected feature modules inside the existing `features` structure without moving auth/session mechanics into page components.
+- Start Stage 9 later by adding the first real protected feature module inside `features` without moving auth/session mechanics into page components or weakening the protected route boundary.

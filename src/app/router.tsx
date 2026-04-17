@@ -1,7 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
+import ProtectedRoute from "./router/ProtectedRoute";
 import AppPage from "../pages/AppPage";
 import HomePage from "../pages/HomePage";
-import ProtectedRoute from "../routes/ProtectedRoute";
 
 export const router = createBrowserRouter([
   {

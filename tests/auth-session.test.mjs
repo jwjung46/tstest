@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 
 import {
   getAuthErrorMessage,
+  getPublicAuthFeedback,
   buildAuthRedirectTarget,
+  getDefaultPostAuthRedirectTarget,
   getHomeRouteBehavior,
   buildOAuthStartPath,
   getAuthState,
@@ -135,6 +137,18 @@ test("buildOAuthStartPath preserves the protected redirect target", () => {
   );
 });
 
+test("getDefaultPostAuthRedirectTarget falls back to /app for missing route state", () => {
+  assert.equal(getDefaultPostAuthRedirectTarget(undefined), "/app");
+  assert.equal(getDefaultPostAuthRedirectTarget({}), "/app");
+});
+
+test("getDefaultPostAuthRedirectTarget preserves a valid protected target from route state", () => {
+  assert.equal(
+    getDefaultPostAuthRedirectTarget({ from: "/app/projects?tab=open#memo" }),
+    "/app/projects?tab=open#memo",
+  );
+});
+
 test("getHomeRouteBehavior redirects authenticated users to the protected app", () => {
   assert.deepEqual(
     getHomeRouteBehavior({
@@ -187,5 +201,25 @@ test("getAuthErrorMessage falls back safely for unknown auth errors", () => {
   assert.equal(
     getAuthErrorMessage("provider_internal_stacktrace"),
     "Login could not be completed. Please try again.",
+  );
+});
+
+test("getPublicAuthFeedback renders a friendly provider-aware auth message", () => {
+  assert.equal(
+    getPublicAuthFeedback({
+      authError: "invalid_state",
+      authProviderLabel: "Google",
+    }),
+    "Your login session expired. Please try again. Provider: Google.",
+  );
+});
+
+test("getPublicAuthFeedback returns null when there is no auth error", () => {
+  assert.equal(
+    getPublicAuthFeedback({
+      authError: null,
+      authProviderLabel: null,
+    }),
+    null,
   );
 });

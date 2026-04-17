@@ -320,13 +320,14 @@ feature는 자기 책임만 가져야 한다.
 - 페이지 컨테이너
 - 섹션 제목 블록
 - 빈 상태 UI
-- 앱 셸 구조
+- 정말 여러 feature가 함께 쓰는 순수 범용 레이아웃 조각
 
 ### 아직 공용화하지 말아야 할 것
 
 - 특정 페이지 전용 섹션
 - 랜딩 페이지 문구 카드
 - 한 번만 쓰는 복합 조합 컴포넌트
+- 인증 전용 버튼, 인증 전용 현재 사용자 표시, 인증 전용 로그인 진입 UI
 
 ### 판단 기준
 
@@ -504,7 +505,7 @@ feature는 자기 책임만 가져야 한다.
 
 1. `src` 폴더 구조를 위 원칙에 맞게 천천히 정리한다.
 2. `app`, `pages`, `features`, `shared`, `platform`의 역할을 고정한다.
-3. 3단계 UI를 만들 때부터 `PageContainer`, `AuthButton`, `AppShell` 정도만 공용화한다.
+3. 3단계 UI를 만들 때부터 `PageContainer`, `EmptyState` 정도의 범용 UI만 `shared`에 두고, `AppShell`은 `app/layout`, 인증 전용 UI는 `features/auth`에 둔다.
 4. `auth.ts` 같은 경계 모듈은 이미 붙은 실제 Worker 기반 auth/session 흐름을 감춘 채, 이후 단계 변화에도 인터페이스를 안정적으로 유지한다.
 5. 다음 기능부터는 page 안이 아니라 feature 안에 실질 구현을 넣는다.
 

@@ -1,11 +1,11 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import EmptyState from "../shared/ui/EmptyState";
-import PageContainer from "../shared/ui/PageContainer";
+import EmptyState from "../../shared/ui/EmptyState";
+import PageContainer from "../../shared/ui/PageContainer";
 import {
   buildAuthRedirectTarget,
   requireAuth,
-} from "../features/auth/model/auth";
-import { useAuthState } from "../features/auth/model/useAuthState";
+} from "../../features/auth/model/auth";
+import { useAuthState } from "../../features/auth/model/useAuthState";
 
 export default function ProtectedRoute() {
   const location = useLocation();

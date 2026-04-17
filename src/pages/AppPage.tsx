@@ -1,40 +1,35 @@
 import AppShell from "../app/layout/AppShell";
-import { useAuthState } from "../features/auth/model/useAuthState";
-import AuthenticatedUserSummary from "../features/auth/ui/AuthenticatedUserSummary";
+import AuthenticatedSessionPanel from "../features/auth/ui/AuthenticatedSessionPanel";
 import SignOutForm from "../features/auth/ui/SignOutForm";
 import EmptyState from "../shared/ui/EmptyState";
 
 export default function AppPage() {
-  const authState = useAuthState();
-  const currentUser =
-    authState.status === "authenticated" ? authState.user : null;
-
   return (
     <AppShell
       brand="Teamspace"
       title="Signed-in workspace"
-      subtitle="The first authenticated experience stays small: confirm who is signed in, keep navigation stable, and preserve the existing Worker-based session boundary."
+      subtitle="This protected area is intentionally minimal: confirm the current session, preserve the Worker-based auth boundary, and leave real product modules for later stages."
       navigationItems={[
         {
-          label: "Dashboard",
-          description: "Reserved for the first signed-in overview.",
+          label: "Module Slot A",
+          description: "Reserved for a future protected feature module.",
         },
         {
-          label: "Projects",
-          description: "Future module area for protected working content.",
+          label: "Module Slot B",
+          description: "Keeps the app shell shape stable before product work.",
         },
         {
-          label: "Settings",
-          description: "Account and workspace configuration can live here.",
+          label: "Module Slot C",
+          description: "Another future feature area, intentionally empty now.",
         },
       ]}
       headerActions={<SignOutForm />}
     >
-      {currentUser ? <AuthenticatedUserSummary user={currentUser} /> : null}
+      <AuthenticatedSessionPanel />
       <EmptyState
         eyebrow="Main Content"
-        title="Protected app page"
-        description="The route boundary already exists. This placeholder now confirms the current signed-in session while larger protected modules stay deferred to later phases."
+        title="Protected app base"
+        description="The protected route boundary is active, the signed-in user is visible, and no real domain feature module has been started yet."
       />
     </AppShell>
   );
