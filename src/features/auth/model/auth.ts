@@ -39,6 +39,30 @@ type RequireAuthResult =
       reason: "loading" | "unauthenticated";
     };
 
+type HomeRouteBehavior =
+  | {
+      kind: "pending";
+    }
+  | {
+      kind: "render";
+    }
+  | {
+      kind: "redirect";
+      to: "/app";
+    };
+
+const DEFAULT_AUTH_ERROR_MESSAGE =
+  "Login could not be completed. Please try again.";
+
+const AUTH_ERROR_MESSAGES = {
+  access_denied: "Login was canceled before it completed.",
+  invalid_state: "Your login session expired. Please try again.",
+  oauth_callback_failed: DEFAULT_AUTH_ERROR_MESSAGE,
+  token_exchange_failed: DEFAULT_AUTH_ERROR_MESSAGE,
+  userinfo_fetch_failed:
+    "Your account information could not be loaded. Please try again.",
+} as const satisfies Record<string, string>;
+
 export function resolveAuthState(snapshot: SessionSnapshot): AuthState {
   if (snapshot.status === "authenticated") {
     return {
@@ -110,4 +134,34 @@ export function buildOAuthStartPath(
   });
 
   return `/auth/${provider}/start?${params.toString()}`;
+}
+
+export function buildSignOutPath() {
+  return "/auth/sign-out";
+}
+
+export function getHomeRouteBehavior(authState: AuthState): HomeRouteBehavior {
+  if (authState.status === "authenticated") {
+    return {
+      kind: "redirect",
+      to: "/app",
+    };
+  }
+
+  if (authState.status === "loading") {
+    return {
+      kind: "pending",
+    };
+  }
+
+  return {
+    kind: "render",
+  };
+}
+
+export function getAuthErrorMessage(authError: string): string {
+  return (
+    AUTH_ERROR_MESSAGES[authError as keyof typeof AUTH_ERROR_MESSAGES] ??
+    DEFAULT_AUTH_ERROR_MESSAGE
+  );
 }

@@ -2,7 +2,7 @@ export type SessionUser = {
   id: string;
   name: string;
   email?: string;
-  provider?: string;
+  provider: string;
 };
 
 export type Session = {
@@ -57,7 +57,7 @@ function isSessionUser(value: unknown): value is SessionUser {
     typeof candidate.id === "string" &&
     typeof candidate.name === "string" &&
     (candidate.email === undefined || typeof candidate.email === "string") &&
-    (candidate.provider === undefined || typeof candidate.provider === "string")
+    typeof candidate.provider === "string"
   );
 }
 

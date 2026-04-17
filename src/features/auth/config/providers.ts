@@ -18,3 +18,7 @@ export type AuthProviderId = (typeof authProviders)[number]["id"];
 export function isAuthProviderId(value: string): value is AuthProviderId {
   return authProviders.some((provider) => provider.id === value);
 }
+
+export function getAuthProviderLabel(providerId: string) {
+  return authProviders.find((provider) => provider.id === providerId)?.label;
+}

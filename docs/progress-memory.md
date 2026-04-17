@@ -2,8 +2,8 @@
 
 ## Current status
 
-- Current stage: Phase 5 OAuth integration completed with a focused cleanup pass.
-- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, and a tri-state auth structure already attached to the real session boundary.
+- Current stage: Phase 6 first authenticated user experience completed on top of the existing Worker auth/session boundary.
+- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, a Worker-handled sign-out endpoint, authenticated-home handling for `/`, and a tri-state auth structure attached to the real session boundary.
 
 ## Completed work
 
@@ -102,6 +102,11 @@
 - What: Updated `wrangler.jsonc` so `/auth/*` and `/api/*` hit the Worker before the SPA fallback route.
 - Why: OAuth callbacks and session reads must execute at the Worker boundary instead of being swallowed by the client-side app shell.
 
+### 20. Phase 6 first authenticated user experience
+
+- What: Added a Worker-handled sign-out route, surfaced the signed-in user name and provider inside the protected app shell, redirected authenticated home visits to `/app`, and centralized public auth error messaging.
+- Why: This adds the first useful post-login experience without changing the existing Worker-based OAuth/session architecture.
+
 ## Decisions fixed so far
 
 - Language: TypeScript.
@@ -117,9 +122,9 @@
 ## Not done yet
 
 - Durable session persistence beyond the current signed-cookie session boundary.
-- Logout UX and richer authenticated account controls.
-- Protected app internal modules and feature screens.
+- Larger protected app internal modules and feature screens.
+- Durable account management capabilities such as account linking, role systems, or richer profile/settings flows.
 
 ## Next planned stage
 
-- Keep the current Worker-based auth/session boundary and move to richer protected-app features or more durable session/account capabilities in a later phase.
+- Keep the current Worker-based auth/session boundary and build the next protected feature modules inside the existing `features` structure without moving auth/session mechanics into page components.

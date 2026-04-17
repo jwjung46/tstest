@@ -1,6 +1,9 @@
 import { handleOAuthCallback, handleOAuthStart } from "./oauth/flow.ts";
 import type { WorkerEnv } from "./env.ts";
-import { createSessionSnapshotResponse } from "./oauth/session.ts";
+import {
+  createSessionSnapshotResponse,
+  createSignOutResponse,
+} from "./oauth/session.ts";
 import { isOAuthProviderId } from "./oauth/providers.ts";
 
 function matchAuthRoute(pathname: string) {
@@ -24,9 +27,14 @@ function matchAuthRoute(pathname: string) {
 
 async function handleRequest(request: Request, env: WorkerEnv) {
   const url = new URL(request.url);
+  const isSecureRequest = url.protocol === "https:";
 
   if (url.pathname === "/api/session" && request.method === "GET") {
     return createSessionSnapshotResponse(env.AUTH_COOKIE_SECRET, request);
+  }
+
+  if (url.pathname === "/auth/sign-out" && request.method === "POST") {
+    return createSignOutResponse(isSecureRequest);
   }
 
   const authRoute = matchAuthRoute(url.pathname);

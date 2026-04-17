@@ -10,6 +10,7 @@ type AppShellProps = {
   title: string;
   subtitle: string;
   navigationItems: NavigationItem[];
+  headerActions?: ReactNode;
   children: ReactNode;
 };
 
@@ -18,6 +19,7 @@ export default function AppShell({
   title,
   subtitle,
   navigationItems,
+  headerActions,
   children,
 }: AppShellProps) {
   return (
@@ -31,6 +33,10 @@ export default function AppShell({
           <h1 className="app-shell__title">{title}</h1>
           <p>{subtitle}</p>
         </div>
+
+        {headerActions ? (
+          <div className="app-shell__header-actions">{headerActions}</div>
+        ) : null}
       </header>
 
       <div className="app-shell__body">

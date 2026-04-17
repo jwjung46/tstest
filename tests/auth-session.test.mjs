@@ -2,7 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  getAuthErrorMessage,
   buildAuthRedirectTarget,
+  getHomeRouteBehavior,
   buildOAuthStartPath,
   getAuthState,
   getCurrentUser,
@@ -57,6 +59,7 @@ test("resolveAuthState exposes session and user for authenticated state", () => 
       id: "user-1",
       name: "Test User",
       email: "test@example.com",
+      provider: "google",
     },
   };
 
@@ -72,6 +75,32 @@ test("resolveSessionSnapshotResponse maps missing session payloads to unauthenti
     status: "unauthenticated",
     session: null,
   });
+});
+
+test("resolveSessionSnapshotResponse keeps provider data from the worker session payload", () => {
+  assert.deepEqual(
+    resolveSessionSnapshotResponse({
+      session: {
+        user: {
+          id: "user-1",
+          name: "Test User",
+          email: "test@example.com",
+          provider: "google",
+        },
+      },
+    }),
+    {
+      status: "authenticated",
+      session: {
+        user: {
+          id: "user-1",
+          name: "Test User",
+          email: "test@example.com",
+          provider: "google",
+        },
+      },
+    },
+  );
 });
 
 test("requireAuth centralizes protected-route interpretation", () => {
@@ -103,5 +132,60 @@ test("buildOAuthStartPath preserves the protected redirect target", () => {
   assert.equal(
     buildOAuthStartPath("google", "/app/projects?tab=open#memo"),
     "/auth/google/start?redirectTo=%2Fapp%2Fprojects%3Ftab%3Dopen%23memo",
+  );
+});
+
+test("getHomeRouteBehavior redirects authenticated users to the protected app", () => {
+  assert.deepEqual(
+    getHomeRouteBehavior({
+      status: "authenticated",
+      session: {
+        user: {
+          id: "user-1",
+          name: "Test User",
+          provider: "google",
+        },
+      },
+      user: {
+        id: "user-1",
+        name: "Test User",
+        provider: "google",
+      },
+    }),
+    {
+      kind: "redirect",
+      to: "/app",
+    },
+  );
+});
+
+test("getHomeRouteBehavior keeps home in a pending state while session bootstrap is loading", () => {
+  assert.deepEqual(
+    getHomeRouteBehavior({
+      status: "loading",
+      session: null,
+      user: null,
+    }),
+    {
+      kind: "pending",
+    },
+  );
+});
+
+test("getAuthErrorMessage maps public auth errors to friendly text", () => {
+  assert.equal(
+    getAuthErrorMessage("token_exchange_failed"),
+    "Login could not be completed. Please try again.",
+  );
+  assert.equal(
+    getAuthErrorMessage("userinfo_fetch_failed"),
+    "Your account information could not be loaded. Please try again.",
+  );
+});
+
+test("getAuthErrorMessage falls back safely for unknown auth errors", () => {
+  assert.equal(
+    getAuthErrorMessage("provider_internal_stacktrace"),
+    "Login could not be completed. Please try again.",
   );
 });

@@ -40,6 +40,16 @@ export function clearSessionCookie(secure: boolean) {
   });
 }
 
+export function createSignOutResponse(secure: boolean) {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      location: "/",
+      "set-cookie": clearSessionCookie(secure),
+    },
+  });
+}
+
 export async function readSessionFromRequest(
   secret: string,
   request: Request,

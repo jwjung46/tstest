@@ -1,12 +1,19 @@
 import AppShell from "../app/layout/AppShell";
+import { useAuthState } from "../features/auth/model/useAuthState";
+import AuthenticatedUserSummary from "../features/auth/ui/AuthenticatedUserSummary";
+import SignOutForm from "../features/auth/ui/SignOutForm";
 import EmptyState from "../shared/ui/EmptyState";
 
 export default function AppPage() {
+  const authState = useAuthState();
+  const currentUser =
+    authState.status === "authenticated" ? authState.user : null;
+
   return (
     <AppShell
       brand="Teamspace"
-      title="App shell placeholder"
-      subtitle="This protected route is ready to receive real modules after authentication is implemented."
+      title="Signed-in workspace"
+      subtitle="The first authenticated experience stays small: confirm who is signed in, keep navigation stable, and preserve the existing Worker-based session boundary."
       navigationItems={[
         {
           label: "Dashboard",
@@ -21,11 +28,13 @@ export default function AppPage() {
           description: "Account and workspace configuration can live here.",
         },
       ]}
+      headerActions={<SignOutForm />}
     >
+      {currentUser ? <AuthenticatedUserSummary user={currentUser} /> : null}
       <EmptyState
         eyebrow="Main Content"
         title="Protected app page"
-        description="The route boundary already exists. For now this empty state marks where signed-in features will render inside the shared app shell."
+        description="The route boundary already exists. This placeholder now confirms the current signed-in session while larger protected modules stay deferred to later phases."
       />
     </AppShell>
   );

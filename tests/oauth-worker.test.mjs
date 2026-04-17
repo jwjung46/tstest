@@ -7,6 +7,7 @@ import {
   getProviderCallbackPath,
   listOAuthProviders,
 } from "../worker/src/oauth/providers.ts";
+import { SESSION_COOKIE_NAME } from "../worker/src/oauth/providers.ts";
 
 function createEnv() {
   return {
@@ -278,4 +279,25 @@ test("callback exchanges the code, creates a session cookie, and returns to the 
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+test("sign-out clears the signed session cookie and returns to the public route", async () => {
+  const response = await worker.fetch(
+    new Request("https://example.com/auth/sign-out", {
+      method: "POST",
+      headers: {
+        cookie: `${SESSION_COOKIE_NAME}=signed-session-value`,
+      },
+    }),
+    createEnv(),
+    createExecutionContext(),
+  );
+
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get("location"), "/");
+
+  const sessionCookie = readCookie(response, SESSION_COOKIE_NAME);
+  assert.match(sessionCookie, /^__session=/);
+  assert.match(sessionCookie, /Max-Age=0/);
+  assert.match(sessionCookie, /Path=\//);
 });

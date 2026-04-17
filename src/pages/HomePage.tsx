@@ -1,14 +1,42 @@
-import { useLocation, useSearchParams } from "react-router-dom";
+import { Navigate, useLocation, useSearchParams } from "react-router-dom";
+import {
+  getAuthErrorMessage,
+  getHomeRouteBehavior,
+} from "../features/auth/model/auth";
+import { getAuthProviderLabel } from "../features/auth/config/providers.ts";
+import { useAuthState } from "../features/auth/model/useAuthState";
 import OAuthLoginActions from "../features/auth/ui/OAuthLoginActions";
+import EmptyState from "../shared/ui/EmptyState";
 import PageContainer from "../shared/ui/PageContainer";
 
 export default function HomePage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const authState = useAuthState();
   const redirectTo =
     typeof location.state?.from === "string" ? location.state.from : "/app";
   const authError = searchParams.get("authError");
   const authProvider = searchParams.get("authProvider");
+  const authProviderLabel = authProvider
+    ? (getAuthProviderLabel(authProvider) ?? authProvider)
+    : null;
+  const homeRouteBehavior = getHomeRouteBehavior(authState);
+
+  if (homeRouteBehavior.kind === "redirect") {
+    return <Navigate to={homeRouteBehavior.to} replace />;
+  }
+
+  if (homeRouteBehavior.kind === "pending") {
+    return (
+      <PageContainer className="page-container--landing">
+        <EmptyState
+          eyebrow="Checking Session"
+          title="Checking your session"
+          description="The current signed-in state is being confirmed before the public entry is shown."
+        />
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer className="page-container--landing">
@@ -35,7 +63,9 @@ export default function HomePage() {
 
           {authError ? (
             <p className="hint" role="status">
-              {`OAuth login with ${authProvider ?? "the provider"} did not complete (${authError}).`}
+              {`${getAuthErrorMessage(authError)} ${
+                authProviderLabel ? `Provider: ${authProviderLabel}.` : ""
+              }`}
             </p>
           ) : null}
 
