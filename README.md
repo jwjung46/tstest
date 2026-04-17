@@ -56,7 +56,7 @@ Cloudflare Worker auth/session boundary 위에 쌓는 재사용형 authenticated
 
 `/api/session` now returns an internal-user-backed session snapshot plus a browser-local recent login provider hint. OAuth callbacks resolve provider identities into internal users before issuing sessions, and all notes endpoints derive ownership from the internal session user id. The frontend never sends `userId`.
 
-On successful sign-in, legacy imported placeholder canonical names such as `Imported Google User` can now be normalized once from confirmed provider profile data. The normal signed-in summary no longer exposes the raw internal user id, and linked login methods now render with cleaner provider-status-driven cards.
+On the first successful sign-in for a new provider identity, the Worker creates the canonical `users` row immediately from confirmed provider profile data, links the `user_identities` row, and issues a session for that internal user. Later sign-ins update identity-side provider metadata only and do not auto-overwrite canonical `users.display_name` or `users.primary_email`.
 
 ## Account Model
 
@@ -64,6 +64,7 @@ On successful sign-in, legacy imported placeholder canonical names such as `Impo
 - `user_identities` stores one linked provider identity per provider for each user.
 - Session `user.id` is an internal user id, not a provider id.
 - `notes.user_id` now means internal user ownership.
+- Pre-launch account initialization assumes a resettable D1 database and a clean first-sign-in path. Imported placeholder canonical-profile uplift is not part of the supported runtime.
 - Linking is explicit and only allowed while signed in.
 - Automatic email-based linking or merging is intentionally not implemented.
 - Server-side merge foundations exist so future merge UI can stay additive.
@@ -78,6 +79,44 @@ On successful sign-in, legacy imported placeholder canonical names such as `Impo
 npm run dev
 npm run dev:cf
 ```
+
+## D1 Reset And Reapply
+
+This repo now assumes a pre-launch reset-based account initialization flow. The intended remote reset path is:
+
+1. Delete the current remote D1 database.
+
+```bash
+npx wrangler d1 delete tstest-notes
+```
+
+2. Create a fresh remote D1 database and capture the new `database_id`.
+
+```bash
+npx wrangler d1 create tstest-notes
+```
+
+3. Update `wrangler.jsonc` so `d1_databases[0].database_id` points at the new database.
+
+4. Apply the checked-in migrations to the fresh database.
+
+```bash
+npx wrangler d1 migrations apply DB --remote
+```
+
+5. Deploy after the migrations have been applied to the target database.
+
+```bash
+npx wrangler deploy
+```
+
+6. Verify the reset flow against the deployed app:
+
+- Sign in with one provider on the fresh database and confirm the new account shows the provider display name and provider email immediately.
+- Sign out and sign back in with the same provider after changing provider-side profile data in the test fixture or provider mock path; confirm the canonical summary does not get overwritten on later sign-ins.
+- While signed in, link a second provider and confirm both login methods appear under the same account.
+- Create a note, refresh, and confirm the note still appears for the same internal account.
+- Sign in with a different account and confirm that note does not appear there.
 
 ## Validation
 

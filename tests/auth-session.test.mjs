@@ -262,14 +262,14 @@ test("getPublicAuthFeedback returns null when there is no auth error", () => {
 
 test("authenticated user summary does not expose the raw internal user id", () => {
   const summary = getAuthenticatedUserSummaryDetails({
-    id: "legacy:google:user-1",
-    name: "Imported Google User",
+    id: "usr_123",
+    name: "Test User",
     email: "person@example.com",
     provider: "google",
   });
 
   assert.deepEqual(summary, {
-    name: "Imported Google User",
+    name: "Test User",
     providerLabel: "Google",
     email: "person@example.com",
   });

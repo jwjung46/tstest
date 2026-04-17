@@ -619,19 +619,21 @@ test("callback exchanges the code, creates a session cookie, and returns to the 
     assert.equal(session.user.provider, "google");
     assert.equal(env.DB.state.users.length, 1);
     assert.equal(env.DB.state.userIdentities.length, 1);
+    assert.equal(env.DB.state.users[0].display_name, "Google User");
+    assert.equal(env.DB.state.users[0].primary_email, "google@example.com");
     assert.equal(env.DB.state.userIdentities[0].provider, "google");
   } finally {
     global.fetch = originalFetch;
   }
 });
 
-test("successful sign-in uplifts a legacy imported canonical display name once from provider identity data", async () => {
+test("successful sign-in for an existing identity updates identity-side provider data without overwriting canonical profile", async () => {
   const env = createEnv({
     users: [
       {
-        id: "user-imported",
-        display_name: "Imported Google User",
-        primary_email: null,
+        id: "user-existing",
+        display_name: "Chosen Canonical Name",
+        primary_email: "owner@example.com",
         created_at: "2026-04-17T09:00:00.000Z",
         updated_at: "2026-04-17T09:00:00.000Z",
         status: "active",
@@ -640,13 +642,13 @@ test("successful sign-in uplifts a legacy imported canonical display name once f
     ],
     userIdentities: [
       {
-        id: "identity-google-imported",
-        user_id: "user-imported",
+        id: "identity-google-existing",
+        user_id: "user-existing",
         provider: "google",
-        provider_user_id: "google-user-imported",
-        email: null,
+        provider_user_id: "google-user-existing",
+        email: "old@example.com",
         email_verified: null,
-        provider_display_name: "Imported Google User",
+        provider_display_name: "Old Provider Name",
         created_at: "2026-04-17T09:00:00.000Z",
         last_login_at: "2026-04-17T09:00:00.000Z",
       },
@@ -675,9 +677,9 @@ test("successful sign-in uplifts a legacy imported canonical display name once f
 
     if (url === "https://openidconnect.googleapis.com/v1/userinfo") {
       return Response.json({
-        sub: "google-user-imported",
-        name: "Real Google Person",
-        email: "real@example.com",
+        sub: "google-user-existing",
+        name: "New Provider Name",
+        email: "new@example.com",
       });
     }
 
@@ -702,8 +704,13 @@ test("successful sign-in uplifts a legacy imported canonical display name once f
 
     assert.equal(callbackResponse.status, 302);
     assert.equal(callbackResponse.headers.get("location"), "/app");
-    assert.equal(env.DB.state.users[0].display_name, "Real Google Person");
-    assert.equal(env.DB.state.users[0].primary_email, "real@example.com");
+    assert.equal(env.DB.state.users[0].display_name, "Chosen Canonical Name");
+    assert.equal(env.DB.state.users[0].primary_email, "owner@example.com");
+    assert.equal(
+      env.DB.state.userIdentities[0].provider_display_name,
+      "New Provider Name",
+    );
+    assert.equal(env.DB.state.userIdentities[0].email, "new@example.com");
   } finally {
     global.fetch = originalFetch;
   }
@@ -946,6 +953,119 @@ test("link callback rejects provider identities already linked to another user",
     assert.equal(
       callbackResponse.headers.get("location"),
       "/app?accountLinkError=identity_linked_to_other_user&accountLinkProvider=google",
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("link callback attaches a new provider to the existing internal user", async () => {
+  const env = createEnv({
+    users: [
+      {
+        id: "user-current",
+        display_name: "Current User",
+        primary_email: "current@example.com",
+        created_at: "2026-04-17T09:00:00.000Z",
+        updated_at: "2026-04-17T09:00:00.000Z",
+        status: "active",
+        merged_into_user_id: null,
+      },
+    ],
+    userIdentities: [
+      {
+        id: "identity-current-google",
+        user_id: "user-current",
+        provider: "google",
+        provider_user_id: "google-user-1",
+        email: "current@example.com",
+        email_verified: 1,
+        provider_display_name: "Current Google User",
+        created_at: "2026-04-17T09:00:00.000Z",
+        last_login_at: "2026-04-17T09:00:00.000Z",
+      },
+    ],
+  });
+  const signedSessionCookie = await createSessionCookie(
+    env.AUTH_COOKIE_SECRET,
+    {
+      user: {
+        id: "user-current",
+        name: "Current User",
+        email: "current@example.com",
+        provider: "google",
+      },
+    },
+    true,
+  );
+
+  const startResponse = await worker.fetch(
+    new Request(
+      "https://example.com/auth/naver/start?redirectTo=%2Fapp&intent=link",
+      {
+        headers: {
+          cookie: signedSessionCookie.split(";").at(0),
+        },
+      },
+    ),
+    env,
+    createExecutionContext(),
+  );
+  const providerUrl = new URL(startResponse.headers.get("location"));
+  const state = providerUrl.searchParams.get("state");
+  assert.ok(state, "expected OAuth state parameter");
+
+  const originalFetch = global.fetch;
+  global.fetch = async (input, init) => {
+    const url = typeof input === "string" ? input : input.url;
+
+    if (url === "https://nid.naver.com/oauth2.0/token") {
+      assert.match(String(init?.body), /code=callback-code/);
+      return Response.json({
+        access_token: "naver-access-token",
+        token_type: "Bearer",
+      });
+    }
+
+    if (url === "https://openapi.naver.com/v1/nid/me") {
+      return Response.json({
+        response: {
+          id: "naver-user-1",
+          name: "Current Naver User",
+          email: "naver@example.com",
+        },
+      });
+    }
+
+    throw new Error(`Unexpected outbound fetch: ${url}`);
+  };
+
+  try {
+    const callbackResponse = await worker.fetch(
+      new Request(
+        `https://example.com/auth/naver/callback?code=callback-code&state=${state}`,
+        {
+          headers: {
+            cookie: [
+              signedSessionCookie.split(";").at(0),
+              readCookie(startResponse, OAUTH_COOKIE_NAME).split(";").at(0),
+            ].join("; "),
+          },
+        },
+      ),
+      env,
+      createExecutionContext(),
+    );
+
+    assert.equal(callbackResponse.status, 302);
+    assert.equal(
+      callbackResponse.headers.get("location"),
+      "/app?accountLinkSuccess=naver",
+    );
+    assert.equal(env.DB.state.userIdentities.length, 2);
+    assert.deepEqual(
+      env.DB.state.userIdentities.map((identity) => identity.user_id),
+      ["user-current", "user-current"],
     );
   } finally {
     global.fetch = originalFetch;

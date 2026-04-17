@@ -162,5 +162,15 @@ test("account-linking migration creates users and user identities with merge-rea
     /UNIQUE\s*\(\s*provider\s*,\s*provider_user_id\s*\)/i,
   );
   assert.match(migration, /UNIQUE\s*\(\s*user_id\s*,\s*provider\s*\)/i);
-  assert.match(migration, /UPDATE notes SET user_id =/i);
+  assert.doesNotMatch(migration, /INSERT\s+OR\s+IGNORE\s+INTO\s+users/i);
+  assert.doesNotMatch(
+    migration,
+    /INSERT\s+OR\s+IGNORE\s+INTO\s+user_identities/i,
+  );
+  assert.doesNotMatch(migration, /UPDATE\s+notes\s+SET\s+user_id/i);
+  assert.doesNotMatch(migration, /Imported Google User/i);
+  assert.doesNotMatch(migration, /Imported Kakao User/i);
+  assert.doesNotMatch(migration, /Imported Naver User/i);
+  assert.doesNotMatch(migration, /Imported User/i);
+  assert.doesNotMatch(migration, /legacy:/i);
 });
