@@ -625,6 +625,174 @@ test("callback exchanges the code, creates a session cookie, and returns to the 
   }
 });
 
+test("successful sign-in uplifts a legacy imported canonical display name once from provider identity data", async () => {
+  const env = createEnv({
+    users: [
+      {
+        id: "user-imported",
+        display_name: "Imported Google User",
+        primary_email: null,
+        created_at: "2026-04-17T09:00:00.000Z",
+        updated_at: "2026-04-17T09:00:00.000Z",
+        status: "active",
+        merged_into_user_id: null,
+      },
+    ],
+    userIdentities: [
+      {
+        id: "identity-google-imported",
+        user_id: "user-imported",
+        provider: "google",
+        provider_user_id: "google-user-imported",
+        email: null,
+        email_verified: null,
+        provider_display_name: "Imported Google User",
+        created_at: "2026-04-17T09:00:00.000Z",
+        last_login_at: "2026-04-17T09:00:00.000Z",
+      },
+    ],
+  });
+  const startResponse = await worker.fetch(
+    new Request("https://example.com/auth/google/start?redirectTo=%2Fapp"),
+    env,
+    createExecutionContext(),
+  );
+  const providerUrl = new URL(startResponse.headers.get("location"));
+  const state = providerUrl.searchParams.get("state");
+  assert.ok(state, "expected OAuth state parameter");
+
+  const originalFetch = global.fetch;
+  global.fetch = async (input, init) => {
+    const url = typeof input === "string" ? input : input.url;
+
+    if (url === "https://oauth2.googleapis.com/token") {
+      assert.match(String(init?.body), /code=callback-code/);
+      return Response.json({
+        access_token: "google-access-token",
+        token_type: "Bearer",
+      });
+    }
+
+    if (url === "https://openidconnect.googleapis.com/v1/userinfo") {
+      return Response.json({
+        sub: "google-user-imported",
+        name: "Real Google Person",
+        email: "real@example.com",
+      });
+    }
+
+    throw new Error(`Unexpected outbound fetch: ${url}`);
+  };
+
+  try {
+    const callbackResponse = await worker.fetch(
+      new Request(
+        `https://example.com/auth/google/callback?code=callback-code&state=${state}`,
+        {
+          headers: {
+            cookie: readCookie(startResponse, OAUTH_COOKIE_NAME)
+              .split(";")
+              .at(0),
+          },
+        },
+      ),
+      env,
+      createExecutionContext(),
+    );
+
+    assert.equal(callbackResponse.status, 302);
+    assert.equal(callbackResponse.headers.get("location"), "/app");
+    assert.equal(env.DB.state.users[0].display_name, "Real Google Person");
+    assert.equal(env.DB.state.users[0].primary_email, "real@example.com");
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("successful sign-in does not overwrite a normal canonical display name", async () => {
+  const env = createEnv({
+    users: [
+      {
+        id: "user-normal",
+        display_name: "Already Normal Name",
+        primary_email: "owner@example.com",
+        created_at: "2026-04-17T09:00:00.000Z",
+        updated_at: "2026-04-17T09:00:00.000Z",
+        status: "active",
+        merged_into_user_id: null,
+      },
+    ],
+    userIdentities: [
+      {
+        id: "identity-google-normal",
+        user_id: "user-normal",
+        provider: "google",
+        provider_user_id: "google-user-normal",
+        email: "old@example.com",
+        email_verified: 1,
+        provider_display_name: "Old Google Name",
+        created_at: "2026-04-17T09:00:00.000Z",
+        last_login_at: "2026-04-17T09:00:00.000Z",
+      },
+    ],
+  });
+  const startResponse = await worker.fetch(
+    new Request("https://example.com/auth/google/start?redirectTo=%2Fapp"),
+    env,
+    createExecutionContext(),
+  );
+  const providerUrl = new URL(startResponse.headers.get("location"));
+  const state = providerUrl.searchParams.get("state");
+  assert.ok(state, "expected OAuth state parameter");
+
+  const originalFetch = global.fetch;
+  global.fetch = async (input, init) => {
+    const url = typeof input === "string" ? input : input.url;
+
+    if (url === "https://oauth2.googleapis.com/token") {
+      assert.match(String(init?.body), /code=callback-code/);
+      return Response.json({
+        access_token: "google-access-token",
+        token_type: "Bearer",
+      });
+    }
+
+    if (url === "https://openidconnect.googleapis.com/v1/userinfo") {
+      return Response.json({
+        sub: "google-user-normal",
+        name: "New Provider Name",
+        email: "new@example.com",
+      });
+    }
+
+    throw new Error(`Unexpected outbound fetch: ${url}`);
+  };
+
+  try {
+    const callbackResponse = await worker.fetch(
+      new Request(
+        `https://example.com/auth/google/callback?code=callback-code&state=${state}`,
+        {
+          headers: {
+            cookie: readCookie(startResponse, OAUTH_COOKIE_NAME)
+              .split(";")
+              .at(0),
+          },
+        },
+      ),
+      env,
+      createExecutionContext(),
+    );
+
+    assert.equal(callbackResponse.status, 302);
+    assert.equal(callbackResponse.headers.get("location"), "/app");
+    assert.equal(env.DB.state.users[0].display_name, "Already Normal Name");
+    assert.equal(env.DB.state.users[0].primary_email, "owner@example.com");
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test("link intent start stores distinct signed state from normal sign-in", async () => {
   const env = createEnv();
   const signedSessionCookie = await createSessionCookie(

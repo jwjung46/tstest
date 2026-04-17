@@ -3,7 +3,7 @@
 ## Current status
 
 - Current stage: Stage 9 notes baseline plus account linking and merge foundation completed on top of the existing Worker auth/session boundary.
-- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, signed sign-in vs link state handling, internal `users` plus `user_identities`, internal-user-backed sessions, browser-local recent-login provider hinting, linked-provider lookup inside the protected app shell, merge foundations, and personal notes with internal-user D1 ownership.
+- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, signed sign-in vs link state handling, internal `users` plus `user_identities`, internal-user-backed sessions, browser-local recent-login provider hinting, linked-provider lookup inside the protected app shell, merge foundations, and personal notes with internal-user D1 ownership. Legacy imported placeholder canonical names can now normalize once on successful sign-in, the normal signed-in summary no longer shows raw internal user ids, and linked login methods render with cleaner provider-status-driven cards.
 
 ## Completed work
 
@@ -121,6 +121,11 @@
 
 - What: Replaced the effective provider-scoped account model with internal `users` plus `user_identities`, migrated `notes.user_id` semantics to internal users, routed OAuth callbacks through identity resolution, added explicit signed linking intent, exposed linked login methods in the protected auth area, recorded a recent-login provider hint for `/`, and added a real `mergeUsers(sourceUserId, targetUserId)` server foundation.
 - Why: This removes the structural limitation where each provider behaved like a separate app user, keeps notes continuity under one internal account, and makes future merge or unlink work additive instead of redesign-heavy.
+
+### 24. Account UX cleanup for legacy imported names and linked-provider presentation
+
+- What: Added a one-time canonical uplift rule for legacy imported placeholder display names during successful sign-in, removed raw internal user ids from the normal signed-in summary, and tightened the linked login methods cards so linked vs unlinked provider states read cleanly with aligned button-like CTAs.
+- Why: This preserves the existing internal account structure while removing migration traces from the end-user UI and making the account area feel intentional instead of transitional.
 
 ## Decisions fixed so far
 

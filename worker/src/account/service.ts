@@ -14,6 +14,7 @@ import {
 } from "./repository.ts";
 import type {
   AccountResolutionResult,
+  AccountUserRecord,
   LinkIdentityResult,
   MergeUsersResult,
   NormalizedIdentityPayload,
@@ -23,6 +24,61 @@ import type { OAuthProviderId } from "../oauth/providers.ts";
 
 function getSeedDisplayName(payload: NormalizedIdentityPayload) {
   return payload.displayName || "User";
+}
+
+const LEGACY_IMPORTED_DISPLAY_NAMES = new Set([
+  "Imported Google User",
+  "Imported Kakao User",
+  "Imported Naver User",
+  "Imported User",
+]);
+
+function shouldUpliftLegacyUserProfile(
+  user: {
+    display_name: string;
+    primary_email: string | null;
+  },
+  payload: NormalizedIdentityPayload,
+) {
+  return (
+    LEGACY_IMPORTED_DISPLAY_NAMES.has(user.display_name) &&
+    (payload.displayName !== "" ||
+      (user.primary_email === null && payload.email !== null))
+  );
+}
+
+async function upliftLegacyImportedUserProfile(
+  db: D1Database,
+  {
+    user,
+    payload,
+    now,
+  }: {
+    user: AccountUserRecord;
+    payload: NormalizedIdentityPayload;
+    now: string;
+  },
+) {
+  if (!shouldUpliftLegacyUserProfile(user, payload)) {
+    return user;
+  }
+
+  const nextDisplayName = payload.displayName || user.display_name;
+  const nextPrimaryEmail = user.primary_email ?? payload.email;
+
+  await updateUserProfile(db, {
+    userId: user.id,
+    displayName: nextDisplayName,
+    primaryEmail: nextPrimaryEmail,
+    now,
+  });
+
+  return {
+    ...user,
+    display_name: nextDisplayName,
+    primary_email: nextPrimaryEmail,
+    updated_at: now,
+  };
 }
 
 export function buildWorkerSession(
@@ -83,8 +139,14 @@ export async function resolveSignInIdentity(
       throw new Error("Identity is attached to a non-active user.");
     }
 
-    return {
+    const resolvedUser = await upliftLegacyImportedUserProfile(db, {
       user,
+      payload,
+      now,
+    });
+
+    return {
+      user: resolvedUser,
       activeProvider: payload.provider,
     };
   }

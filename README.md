@@ -56,6 +56,8 @@ Cloudflare Worker auth/session boundary 위에 쌓는 재사용형 authenticated
 
 `/api/session` now returns an internal-user-backed session snapshot plus a browser-local recent login provider hint. OAuth callbacks resolve provider identities into internal users before issuing sessions, and all notes endpoints derive ownership from the internal session user id. The frontend never sends `userId`.
 
+On successful sign-in, legacy imported placeholder canonical names such as `Imported Google User` can now be normalized once from confirmed provider profile data. The normal signed-in summary no longer exposes the raw internal user id, and linked login methods now render with cleaner provider-status-driven cards.
+
 ## Account Model
 
 - `users` is the canonical app account table.
@@ -65,6 +67,7 @@ Cloudflare Worker auth/session boundary 위에 쌓는 재사용형 authenticated
 - Linking is explicit and only allowed while signed in.
 - Automatic email-based linking or merging is intentionally not implemented.
 - Server-side merge foundations exist so future merge UI can stay additive.
+- The raw internal session user id remains internal data and is not shown in the normal end-user summary UI.
 
 ## Local Development
 

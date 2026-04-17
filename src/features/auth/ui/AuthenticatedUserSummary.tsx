@@ -1,5 +1,5 @@
 import type { SessionUser } from "../../../platform/session/session.ts";
-import { getAuthProviderLabel } from "../config/providers.ts";
+import { getAuthenticatedUserSummaryDetails } from "../model/account-ui.ts";
 
 type AuthenticatedUserSummaryProps = {
   user: SessionUser;
@@ -8,28 +8,30 @@ type AuthenticatedUserSummaryProps = {
 export default function AuthenticatedUserSummary({
   user,
 }: AuthenticatedUserSummaryProps) {
-  const providerLabel = getAuthProviderLabel(user.provider) ?? user.provider;
+  const summary = getAuthenticatedUserSummaryDetails(user);
 
   return (
     <section className="authenticated-user-summary" aria-label="Signed-in user">
-      <p className="eyebrow">Signed In</p>
-      <div className="authenticated-user-summary__grid">
+      <div className="authenticated-user-summary__top">
         <div>
-          <span className="authenticated-user-summary__label">
-            Display name
-          </span>
-          <strong>{user.name}</strong>
+          <p className="eyebrow">Signed In</p>
+          <strong className="authenticated-user-summary__name">
+            {summary.name}
+          </strong>
+          {summary.email ? (
+            <p className="authenticated-user-summary__email">{summary.email}</p>
+          ) : null}
         </div>
-        <div>
-          <span className="authenticated-user-summary__label">Provider</span>
-          <strong>{providerLabel}</strong>
-        </div>
-        <div>
-          <span className="authenticated-user-summary__label">
-            Internal user
-          </span>
-          <strong>{user.id}</strong>
-        </div>
+        <span className="authenticated-user-summary__badge">
+          {summary.providerLabel}
+        </span>
+      </div>
+
+      <div className="authenticated-user-summary__meta">
+        <span className="authenticated-user-summary__label">
+          Current sign-in provider
+        </span>
+        <strong>{summary.providerLabel}</strong>
       </div>
     </section>
   );

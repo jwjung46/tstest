@@ -20,6 +20,10 @@ import {
   getSessionSnapshot,
   resolveSessionSnapshotResponse,
 } from "../src/platform/session/session.ts";
+import {
+  getAuthenticatedUserSummaryDetails,
+  getLinkedProviderCardViewModel,
+} from "../src/features/auth/model/account-ui.ts";
 
 test("getSessionSnapshot starts in loading before session bootstrap completes", () => {
   assert.deepEqual(getSessionSnapshot(), {
@@ -254,4 +258,73 @@ test("getPublicAuthFeedback returns null when there is no auth error", () => {
     }),
     null,
   );
+});
+
+test("authenticated user summary does not expose the raw internal user id", () => {
+  const summary = getAuthenticatedUserSummaryDetails({
+    id: "legacy:google:user-1",
+    name: "Imported Google User",
+    email: "person@example.com",
+    provider: "google",
+  });
+
+  assert.deepEqual(summary, {
+    name: "Imported Google User",
+    providerLabel: "Google",
+    email: "person@example.com",
+  });
+  assert.equal("id" in summary, false);
+});
+
+test("linked provider card renders linked and current-provider state details", () => {
+  const card = getLinkedProviderCardViewModel({
+    provider: "google",
+    label: "Google",
+    isLinked: true,
+    isCurrent: true,
+    canLink: false,
+    email: "person@example.com",
+    emailVerified: true,
+    providerDisplayName: "Person Name",
+    lastLoginAt: "2026-04-18T08:30:00.000Z",
+  });
+
+  assert.equal(card.statusText, "Linked");
+  assert.deepEqual(card.badges, ["Linked", "Current provider"]);
+  assert.deepEqual(card.detailRows, [
+    { label: "Profile", value: "Person Name" },
+    { label: "Email", value: "person@example.com" },
+    { label: "Last login", value: "2026-04-18T08:30:00.000Z" },
+  ]);
+  assert.deepEqual(card.cta, {
+    kind: "disabled",
+    label: "Already linked",
+  });
+});
+
+test("linked provider card simplifies the unlinked provider state", () => {
+  const card = getLinkedProviderCardViewModel({
+    provider: "naver",
+    label: "Naver",
+    isLinked: false,
+    isCurrent: false,
+    canLink: true,
+    email: null,
+    emailVerified: null,
+    providerDisplayName: null,
+    lastLoginAt: null,
+  });
+
+  assert.equal(card.statusText, "Not linked");
+  assert.deepEqual(card.badges, ["Available"]);
+  assert.equal(
+    card.helperText,
+    "Add Naver as another sign-in option for this account.",
+  );
+  assert.deepEqual(card.detailRows, []);
+  assert.deepEqual(card.cta, {
+    kind: "link",
+    label: "Link Naver",
+    href: "/auth/naver/start?redirectTo=%2Fapp&intent=link",
+  });
 });

@@ -2,10 +2,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ApiError } from "../../../platform/api/client.ts";
 import { getAuthProviderLabel } from "../config/providers.ts";
-import {
-  buildAccountLinkStartPath,
-  getAccountLinkFeedback,
-} from "../model/auth.ts";
+import { getLinkedProviderCardViewModel } from "../model/account-ui.ts";
+import { getAccountLinkFeedback } from "../model/auth.ts";
 import { fetchLinkedAccountProviders } from "../services/account-api.ts";
 import type { LinkedAccountProvider } from "../types/account.ts";
 
@@ -15,6 +13,74 @@ function getErrorMessage(error: unknown) {
   }
 
   return "Linked login methods could not be loaded.";
+}
+
+export function LinkedProviderCard({
+  provider,
+}: {
+  provider: LinkedAccountProvider;
+}) {
+  const card = getLinkedProviderCardViewModel(provider);
+
+  return (
+    <article className="linked-provider-card">
+      <div className="linked-provider-card__top">
+        <div className="linked-provider-card__headline">
+          <strong>{card.label}</strong>
+          <p className="linked-provider-card__status">{card.statusText}</p>
+        </div>
+        <div
+          className="linked-provider-card__badges"
+          aria-label="Provider status"
+        >
+          {card.badges.map((badge) => (
+            <span
+              className={
+                badge === "Linked" || badge === "Current provider"
+                  ? "linked-provider-card__badge linked-provider-card__badge--linked"
+                  : "linked-provider-card__badge"
+              }
+              key={badge}
+            >
+              {badge}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="linked-provider-card__body">
+        {card.helperText ? (
+          <p className="linked-provider-card__helper">{card.helperText}</p>
+        ) : null}
+
+        {card.detailRows.length > 0 ? (
+          <dl className="linked-provider-card__meta">
+            {card.detailRows.map((row) => (
+              <div className="linked-provider-card__meta-row" key={row.label}>
+                <dt>{row.label}</dt>
+                <dd>{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
+      </div>
+
+      <div className="linked-provider-card__actions">
+        {card.cta.kind === "link" ? (
+          <a
+            className="notes-button notes-button--primary"
+            href={card.cta.href}
+          >
+            {card.cta.label}
+          </a>
+        ) : (
+          <button className="notes-button" type="button" disabled>
+            {card.cta.label}
+          </button>
+        )}
+      </div>
+    </article>
+  );
 }
 
 export default function LinkedLoginMethodsPanel() {
@@ -76,8 +142,8 @@ export default function LinkedLoginMethodsPanel() {
           <h2 className="linked-login-methods__title">Linked login methods</h2>
         </div>
         <p className="hint">
-          Link additional providers to the same internal account without
-          splitting notes by provider.
+          Keep one account and one notes workspace while adding extra sign-in
+          providers.
         </p>
       </div>
 
@@ -95,50 +161,7 @@ export default function LinkedLoginMethodsPanel() {
 
       <div className="linked-login-methods__grid">
         {providers.map((provider) => (
-          <article className="linked-provider-card" key={provider.provider}>
-            <div className="linked-provider-card__top">
-              <div>
-                <strong>{provider.label}</strong>
-                <p className="hint">
-                  {provider.isLinked ? "Linked" : "Not linked"}
-                  {provider.isCurrent ? " · Current session" : ""}
-                </p>
-              </div>
-              <span
-                className={
-                  provider.isLinked
-                    ? "linked-provider-card__badge linked-provider-card__badge--linked"
-                    : "linked-provider-card__badge"
-                }
-              >
-                {provider.isLinked ? "Linked" : "Available"}
-              </span>
-            </div>
-
-            <div className="linked-provider-card__meta">
-              <span>
-                Provider name: {provider.providerDisplayName ?? "Not linked"}
-              </span>
-              <span>Email: {provider.email ?? "Not available"}</span>
-              <span>
-                Last login:{" "}
-                {provider.lastLoginAt ? provider.lastLoginAt : "Never"}
-              </span>
-            </div>
-
-            {provider.canLink ? (
-              <a
-                className="notes-button notes-button--primary"
-                href={buildAccountLinkStartPath(provider.provider, "/app")}
-              >
-                Link {provider.label}
-              </a>
-            ) : (
-              <button className="notes-button" type="button" disabled>
-                Already linked
-              </button>
-            )}
-          </article>
+          <LinkedProviderCard key={provider.provider} provider={provider} />
         ))}
       </div>
     </section>
