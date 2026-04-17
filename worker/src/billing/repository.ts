@@ -203,6 +203,51 @@ export async function markSubscriptionCanceled(
     .run();
 }
 
+export async function updateSubscriptionBillingState(
+  db: D1Database,
+  {
+    subscriptionId,
+    status,
+    currentPeriodStart,
+    currentPeriodEnd,
+    billingAnchorAt,
+    latestPaymentMethodId,
+    cancelAtPeriodEnd,
+    canceledAt,
+    endedAt,
+    now,
+  }: {
+    subscriptionId: string;
+    status: SubscriptionStatus;
+    currentPeriodStart: string | null;
+    currentPeriodEnd: string | null;
+    billingAnchorAt: string | null;
+    latestPaymentMethodId: string | null;
+    cancelAtPeriodEnd: number;
+    canceledAt: string | null;
+    endedAt: string | null;
+    now: string;
+  },
+) {
+  await db
+    .prepare(
+      "UPDATE subscriptions SET status = ?, current_period_start = ?, current_period_end = ?, billing_anchor_at = ?, latest_payment_method_id = ?, cancel_at_period_end = ?, canceled_at = ?, ended_at = ?, updated_at = ? WHERE id = ?",
+    )
+    .bind(
+      status,
+      currentPeriodStart,
+      currentPeriodEnd,
+      billingAnchorAt,
+      latestPaymentMethodId,
+      cancelAtPeriodEnd,
+      canceledAt,
+      endedAt,
+      now,
+      subscriptionId,
+    )
+    .run();
+}
+
 export async function createSubscriptionCycle(
   db: D1Database,
   {
@@ -295,6 +340,93 @@ export async function listCyclesBySubscriptionId(
     .all<SubscriptionCycleRecord>();
 
   return result.results;
+}
+
+export async function listCyclesByUserId(
+  db: D1Database,
+  userId: string,
+): Promise<SubscriptionCycleRecord[]> {
+  const result = await db
+    .prepare(
+      "SELECT c.id, c.subscription_id, c.cycle_index, c.period_start, c.period_end, c.status, c.scheduled_amount, c.currency, c.payment_method_id, c.toss_payment_key, c.toss_order_id, c.charged_at, c.failed_at, c.failure_code, c.failure_message, c.created_at, c.updated_at FROM subscription_cycles c INNER JOIN subscriptions s ON s.id = c.subscription_id WHERE s.user_id = ? ORDER BY c.created_at DESC",
+    )
+    .bind(userId)
+    .all<SubscriptionCycleRecord>();
+
+  return result.results;
+}
+
+export async function findCycleByOrderId(
+  db: D1Database,
+  orderId: string,
+): Promise<SubscriptionCycleRecord | null> {
+  return (
+    (await db
+      .prepare(
+        "SELECT id, subscription_id, cycle_index, period_start, period_end, status, scheduled_amount, currency, payment_method_id, toss_payment_key, toss_order_id, charged_at, failed_at, failure_code, failure_message, created_at, updated_at FROM subscription_cycles WHERE toss_order_id = ?",
+      )
+      .bind(orderId)
+      .first<SubscriptionCycleRecord>()) ?? null
+  );
+}
+
+export async function findCycleByPaymentKey(
+  db: D1Database,
+  paymentKey: string,
+): Promise<SubscriptionCycleRecord | null> {
+  return (
+    (await db
+      .prepare(
+        "SELECT id, subscription_id, cycle_index, period_start, period_end, status, scheduled_amount, currency, payment_method_id, toss_payment_key, toss_order_id, charged_at, failed_at, failure_code, failure_message, created_at, updated_at FROM subscription_cycles WHERE toss_payment_key = ?",
+      )
+      .bind(paymentKey)
+      .first<SubscriptionCycleRecord>()) ?? null
+  );
+}
+
+export async function updateSubscriptionCycleState(
+  db: D1Database,
+  {
+    cycleId,
+    status,
+    periodStart,
+    periodEnd,
+    tossPaymentKey,
+    chargedAt,
+    failedAt,
+    failureCode,
+    failureMessage,
+    now,
+  }: {
+    cycleId: string;
+    status: SubscriptionCycleRecord["status"];
+    periodStart: string;
+    periodEnd: string;
+    tossPaymentKey: string | null;
+    chargedAt: string | null;
+    failedAt: string | null;
+    failureCode: string | null;
+    failureMessage: string | null;
+    now: string;
+  },
+) {
+  await db
+    .prepare(
+      "UPDATE subscription_cycles SET status = ?, period_start = ?, period_end = ?, toss_payment_key = ?, charged_at = ?, failed_at = ?, failure_code = ?, failure_message = ?, updated_at = ? WHERE id = ?",
+    )
+    .bind(
+      status,
+      periodStart,
+      periodEnd,
+      tossPaymentKey,
+      chargedAt,
+      failedAt,
+      failureCode,
+      failureMessage,
+      now,
+      cycleId,
+    )
+    .run();
 }
 
 export async function findBillingEventByKey(

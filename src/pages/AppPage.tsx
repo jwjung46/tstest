@@ -9,11 +9,11 @@ export default function AppPage() {
     <AppShell
       brand="Teamspace"
       title="Signed-in workspace"
-      subtitle="The protected auth/session boundary stays intact while the first modular product feature lives inside the app shell."
+      subtitle="The protected auth/session boundary stays intact while billing and notes stay feature-owned inside the app shell."
       navigationItems={[
         {
           label: "Billing",
-          description: "Internal-user subscription state and entitlements.",
+          description: "Real Toss one-time payment, history, and entitlements.",
         },
         {
           label: "Notes",

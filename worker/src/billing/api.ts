@@ -1,13 +1,17 @@
 import type { WorkerEnv } from "../env.ts";
 import { readSessionFromRequest } from "../oauth/session.ts";
+import { TossBillingError } from "./toss-client.ts";
 import {
+  BillingRequestError,
   cancelSubscriptionContract,
-  createSubscriptionContract,
+  confirmCheckoutPayment,
+  createCheckoutSession,
   getBillingOverview,
+  getCheckoutResult,
   getEntitlements,
   getSubscription,
   listBillingHistory,
-  recordBillingEvent,
+  processTossWebhook,
 } from "./service.ts";
 
 function jsonResponse(payload: unknown, status = 200) {
@@ -51,6 +55,52 @@ function matchCancelPath(pathname: string) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+function toBillingError(error: unknown) {
+  if (error instanceof BillingRequestError) {
+    return error;
+  }
+
+  if (error instanceof TossBillingError) {
+    return new BillingRequestError(error.code, error.message, error.status);
+  }
+
+  if (error instanceof Error) {
+    return new BillingRequestError(
+      "billing_request_failed",
+      error.message,
+      400,
+    );
+  }
+
+  return new BillingRequestError(
+    "billing_request_failed",
+    "The billing request failed.",
+    400,
+  );
+}
+
+function getAppOrigin(request: Request) {
+  return new URL(request.url).origin;
+}
+
+function mapEntitlementSummary(entry: {
+  featureKey: string;
+  status: string;
+  sourceType: string;
+  sourceId: string;
+  effectiveFrom: string;
+  effectiveUntil: string | null;
+}) {
+  return {
+    featureKey: entry.featureKey,
+    status: entry.status,
+    sourceType: entry.sourceType,
+    sourceId: entry.sourceId,
+    effectiveFrom: entry.effectiveFrom,
+    effectiveUntil: entry.effectiveUntil,
+  };
+}
+
 export async function handleBillingRequest(
   request: Request,
   env: WorkerEnv,
@@ -64,55 +114,24 @@ export async function handleBillingRequest(
 
     const body = await readJsonBody(request);
 
-    if (!body || typeof body !== "object") {
-      return errorResponse(
-        400,
-        "invalid_request",
-        "A valid webhook payload is required.",
-      );
+    try {
+      const result = await processTossWebhook(env.DB, {
+        payload: body,
+      });
+
+      return jsonResponse({
+        ok: true,
+        duplicate: result.duplicate,
+        eventKey: result.event.eventKey,
+      });
+    } catch (error) {
+      const billingError = toBillingError(error);
+      const status =
+        billingError.status === 400 || billingError.status >= 500
+          ? billingError.status
+          : 500;
+      return errorResponse(status, billingError.code, billingError.message);
     }
-
-    const payload = body as Record<string, unknown>;
-
-    if (
-      typeof payload.eventKey !== "string" ||
-      typeof payload.eventType !== "string" ||
-      typeof payload.sourceType !== "string"
-    ) {
-      return errorResponse(
-        400,
-        "invalid_request",
-        "Webhook payload is missing required fields.",
-      );
-    }
-
-    const result = await recordBillingEvent(env.DB, {
-      eventKey: payload.eventKey,
-      eventType: payload.eventType,
-      sourceType: payload.sourceType,
-      relatedUserId:
-        typeof payload.relatedUserId === "string"
-          ? payload.relatedUserId
-          : null,
-      relatedSubscriptionId:
-        typeof payload.relatedSubscriptionId === "string"
-          ? payload.relatedSubscriptionId
-          : null,
-      relatedCycleId:
-        typeof payload.relatedCycleId === "string"
-          ? payload.relatedCycleId
-          : null,
-      payload:
-        payload.payload && typeof payload.payload === "object"
-          ? (payload.payload as Record<string, unknown>)
-          : null,
-    });
-
-    return jsonResponse({
-      ok: true,
-      duplicate: result.duplicate,
-      eventKey: result.event.eventKey,
-    });
   }
 
   if (!url.pathname.startsWith("/api/billing")) {
@@ -133,6 +152,86 @@ export async function handleBillingRequest(
 
       const overview = await getBillingOverview(env.DB, userId);
       return jsonResponse(overview);
+    }
+
+    if (url.pathname === "/api/billing/checkout/session") {
+      if (request.method !== "POST") {
+        return errorResponse(405, "method_not_allowed", "Method not allowed.");
+      }
+
+      const body = await readJsonBody(request);
+      const payload =
+        body && typeof body === "object"
+          ? (body as Record<string, unknown>)
+          : null;
+
+      if (typeof payload?.planCode !== "string") {
+        return errorResponse(
+          400,
+          "invalid_request",
+          "A valid planCode is required.",
+        );
+      }
+
+      const result = await createCheckoutSession(env.DB, env, {
+        userId,
+        planCode: payload.planCode,
+        appOrigin: getAppOrigin(request),
+      });
+
+      return jsonResponse(result, 201);
+    }
+
+    if (url.pathname === "/api/billing/checkout/confirm") {
+      if (request.method !== "POST") {
+        return errorResponse(405, "method_not_allowed", "Method not allowed.");
+      }
+
+      const body = await readJsonBody(request);
+      const payload =
+        body && typeof body === "object"
+          ? (body as Record<string, unknown>)
+          : null;
+
+      if (
+        typeof payload?.paymentKey !== "string" ||
+        typeof payload?.orderId !== "string" ||
+        typeof payload?.amount !== "number"
+      ) {
+        return errorResponse(
+          400,
+          "invalid_request",
+          "paymentKey, orderId, and amount are required.",
+        );
+      }
+
+      const result = await confirmCheckoutPayment(env.DB, env, {
+        userId,
+        paymentKey: payload.paymentKey,
+        orderId: payload.orderId,
+        amount: payload.amount,
+      });
+
+      return jsonResponse(result);
+    }
+
+    if (url.pathname === "/api/billing/checkout/result") {
+      if (request.method !== "GET") {
+        return errorResponse(405, "method_not_allowed", "Method not allowed.");
+      }
+
+      const result = await getCheckoutResult(env.DB, {
+        userId,
+        orderId: url.searchParams.get("orderId"),
+        flow: url.searchParams.get("flow"),
+        code: url.searchParams.get("code"),
+        message: url.searchParams.get("message"),
+      });
+
+      return jsonResponse({
+        ...result,
+        entitlements: result.entitlements.map(mapEntitlementSummary),
+      });
     }
 
     if (url.pathname === "/api/billing/subscription") {
@@ -171,39 +270,6 @@ export async function handleBillingRequest(
       return jsonResponse(history);
     }
 
-    if (url.pathname === "/api/billing/subscriptions") {
-      if (request.method !== "POST") {
-        return errorResponse(405, "method_not_allowed", "Method not allowed.");
-      }
-
-      const body = await readJsonBody(request);
-
-      if (!body || typeof body !== "object") {
-        return errorResponse(
-          400,
-          "invalid_request",
-          "A valid planCode is required.",
-        );
-      }
-
-      const payload = body as Record<string, unknown>;
-
-      if (typeof payload.planCode !== "string") {
-        return errorResponse(
-          400,
-          "invalid_request",
-          "A valid planCode is required.",
-        );
-      }
-
-      const result = await createSubscriptionContract(env.DB, {
-        userId,
-        planCode: payload.planCode,
-      });
-
-      return jsonResponse(result, 201);
-    }
-
     const subscriptionId = matchCancelPath(url.pathname);
 
     if (subscriptionId) {
@@ -219,9 +285,12 @@ export async function handleBillingRequest(
       return jsonResponse(result);
     }
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "The billing request failed.";
-    return errorResponse(400, "billing_request_failed", message);
+    const billingError = toBillingError(error);
+    return errorResponse(
+      billingError.status,
+      billingError.code,
+      billingError.message,
+    );
   }
 
   return null;

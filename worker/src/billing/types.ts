@@ -14,7 +14,7 @@ export type SubscriptionStatus =
 
 export type SubscriptionCycleStatus =
   | "pending"
-  | "charged"
+  | "paid"
   | "failed"
   | "canceled";
 
@@ -232,6 +232,38 @@ export type BillingCycle = {
   failureMessage: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type TossEnvironment = "test" | "live";
+
+export type TossConfig = {
+  clientKey: string;
+  secretKey: string;
+  environment: TossEnvironment;
+  apiBaseUrl: string;
+};
+
+export type TossNormalizedPayment = {
+  paymentKey: string;
+  orderId: string;
+  status: string;
+  totalAmount: number;
+  currency: string;
+  method: string | null;
+  approvedAt: string | null;
+  raw: Record<string, unknown>;
+};
+
+export type TossNormalizedWebhookEvent = {
+  eventKey: string;
+  eventType: string;
+  createdAt: string;
+  orderId: string | null;
+  paymentKey: string | null;
+  paymentStatus: string | null;
+  totalAmount: number | null;
+  approvedAt: string | null;
+  raw: Record<string, unknown>;
 };
 
 export type BillingEvent = {

@@ -2,8 +2,8 @@
 
 ## Current status
 
-- Current stage: Stage 1 Toss subscription system foundation added on top of the existing Stage 9 notes/account/auth baseline.
-- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, signed sign-in vs link state handling, Worker-handled sign-out, internal `users` plus `user_identities`, internal-user-backed sessions, browser-local recent-login provider hinting, linked-provider lookup inside the protected app shell, merge foundations, personal notes with internal-user D1 ownership, and a new internal-user-based billing foundation. Billing ownership is internal-user-based only through `billing_customers.user_id`, not provider identity scoped. The billing domain now includes `billing_customers`, `billing_payment_methods`, `subscription_plans`, `subscriptions`, `subscription_cycles`, `billing_events`, `entitlements`, and `manual_entitlement_overrides`, with Toss isolated behind `worker/src/billing/toss-client.ts`. Current `/app` scope is account/session surfaces, the Stage 1 billing overview surface, and the personal notes module. Real Toss billing-key setup, real recurring charge approval, and real webhook verification are still Stage 2 work.
+- Current stage: Stage 2 Toss one-time payment integration completed on top of the existing Stage 9 notes/account/auth baseline and the Stage 1 internal billing foundation.
+- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, signed sign-in vs link state handling, Worker-handled sign-out, internal `users` plus `user_identities`, internal-user-backed sessions, browser-local recent-login provider hinting, linked-provider lookup inside the protected app shell, merge foundations, personal notes with internal-user D1 ownership, and an internal-user-based Stage 2 Toss billing flow. Billing ownership is still internal-user-based only through `billing_customers.user_id`, not provider identity scoped. The billing domain includes `billing_customers`, `billing_payment_methods`, `subscription_plans`, `subscriptions`, `subscription_cycles`, `billing_events`, `entitlements`, and `manual_entitlement_overrides`, with real Toss HTTP access isolated behind `worker/src/billing/toss-client.ts`. Current `/app` scope is account/session surfaces, real Toss one-time billing testing, and the personal notes module. `pro_monthly` currently means a one-time 30-day paid access contract, not auto-renew.
 
 ## Completed work
 
@@ -137,6 +137,11 @@
 - What: Added a durable internal billing schema and Worker billing domain under `worker/src/billing`, including internal-user-owned billing customers, plan catalog, internal subscription contracts, recurring cycle records, idempotent billing event logging, entitlement recomputation, and minimal protected billing UI under `src/features/billing`.
 - Why: Stage 2 needs to attach real Toss billing-key setup, recurring charge approval, and webhook validation without redesigning billing ownership or feature-access structure, so the internal subscription and entitlement model must exist first.
 
+### 27. Stage 2 Toss one-time payment integration
+
+- What: Added real Toss one-time payment checkout/session, frontend checkout launch, success redirect confirm, fail/result handling, webhook normalization and idempotent reconciliation, cycle-to-order/payment linkage, 30-day `pro_monthly` activation rules, billing history updates, and a usable protected billing UI for end-to-end testing in the Worker environment.
+- Why: The product now needs real payment confirmation and entitlement updates without breaking the Stage 1 internal-user billing foundation or binding ownership to provider identity, while still leaving recurring billing approval as future work.
+
 ## Decisions fixed so far
 
 - Language: TypeScript.
@@ -153,9 +158,9 @@
 
 - Durable session persistence beyond the current signed-cookie session boundary.
 - End-user merge wizard UI, unlink UI, automatic email-based linking, role systems, refresh-token rotation, or richer profile/settings flows.
-- Real Toss client key / secret wiring, billing-key registration flow, authKey to billingKey confirmation, real recurring charge approval, real webhook signature/domain validation, recurring charge scheduling, or production payment-method UX.
+- Real recurring billing approval, billing-key lifecycle, authKey to billingKey confirmation, recurring charge scheduling, recurring cancel/resume semantics, or stricter webhook signature/domain validation.
 - Any later product expansion beyond the current notes plus billing foundation, such as search, sharing, tags, attachments, or separate note detail routes.
 
 ## Next planned stage
 
-- Attach real Toss connectivity to the existing Stage 1 billing boundaries without changing the architectural truth that billing belongs to the internal user and app access is driven by entitlements rather than raw provider payloads.
+- Extend the completed Stage 2 one-time payment flow into approved recurring billing only when billing-key registration, recurring charge scheduling, and recurring lifecycle semantics are allowed, while keeping billing ownership tied to the internal user and feature access driven by entitlements.

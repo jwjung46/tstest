@@ -8,6 +8,7 @@ import {
   recomputeEntitlements,
 } from "../worker/src/billing/entitlements.ts";
 import { createBillingDbMock } from "./helpers/billing-test-helpers.mjs";
+import { parseBillingCheckoutReturn } from "../src/features/billing/model/checkout-result.ts";
 import {
   buildWorkspaceSelectionState,
   getDefaultSelectedNoteId,
@@ -326,5 +327,40 @@ test("recomputeEntitlements promotes pro features from an active internal-user s
       "2026-04-18T09:00:00.000Z",
     ),
     true,
+  );
+});
+
+test("parseBillingCheckoutReturn interprets success and fail redirect params for billing", () => {
+  assert.deepEqual(
+    parseBillingCheckoutReturn(
+      new URLSearchParams({
+        billingFlow: "success",
+        orderId: "order_1",
+        paymentKey: "pay_1",
+        amount: "9900",
+      }),
+    ),
+    {
+      flow: "success",
+      orderId: "order_1",
+      paymentKey: "pay_1",
+      amount: 9900,
+    },
+  );
+
+  assert.deepEqual(
+    parseBillingCheckoutReturn(
+      new URLSearchParams({
+        billingFlow: "fail",
+        code: "PAY_PROCESS_CANCELED",
+        message: "customer canceled",
+      }),
+    ),
+    {
+      flow: "fail",
+      orderId: null,
+      code: "PAY_PROCESS_CANCELED",
+      message: "customer canceled",
+    },
   );
 });

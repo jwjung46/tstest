@@ -704,6 +704,60 @@ a {
   color: var(--color-muted);
 }
 
+.billing-feedback {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(19, 34, 56, 0.08);
+  background: rgba(19, 34, 56, 0.04);
+}
+
+.billing-feedback--success {
+  border-color: rgba(15, 118, 110, 0.18);
+  background: rgba(15, 118, 110, 0.1);
+}
+
+.billing-feedback--error {
+  border-color: rgba(171, 43, 54, 0.18);
+  background: rgba(171, 43, 54, 0.08);
+}
+
+.billing-feedback--neutral {
+  border-color: rgba(19, 34, 56, 0.12);
+}
+
+.billing-plan-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.billing-plan-card {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-radius: 16px;
+  border: 1px solid rgba(19, 34, 56, 0.08);
+  background: rgba(19, 34, 56, 0.03);
+}
+
+.billing-plan-card__copy {
+  display: grid;
+  gap: 6px;
+}
+
+.billing-plan-card__copy span {
+  color: var(--color-muted);
+  font-size: 0.88rem;
+}
+
+.billing-plan-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
 .linked-provider-card {
   display: grid;
   grid-template-rows: auto 1fr auto;

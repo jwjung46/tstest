@@ -344,6 +344,42 @@ export function createBillingDbMock(initialState = {}) {
 
       if (
         normalized ===
+        "UPDATE subscriptions SET status = ?, current_period_start = ?, current_period_end = ?, billing_anchor_at = ?, latest_payment_method_id = ?, cancel_at_period_end = ?, canceled_at = ?, ended_at = ?, updated_at = ? WHERE id = ?"
+      ) {
+        const [
+          status,
+          current_period_start,
+          current_period_end,
+          billing_anchor_at,
+          latest_payment_method_id,
+          cancel_at_period_end,
+          canceled_at,
+          ended_at,
+          updated_at,
+          subscriptionId,
+        ] = values;
+        const subscription = state.subscriptions.find(
+          (entry) => entry.id === subscriptionId,
+        );
+
+        if (!subscription) {
+          return { success: true, meta: { changes: 0 } };
+        }
+
+        subscription.status = status;
+        subscription.current_period_start = current_period_start;
+        subscription.current_period_end = current_period_end;
+        subscription.billing_anchor_at = billing_anchor_at;
+        subscription.latest_payment_method_id = latest_payment_method_id;
+        subscription.cancel_at_period_end = cancel_at_period_end;
+        subscription.canceled_at = canceled_at;
+        subscription.ended_at = ended_at;
+        subscription.updated_at = updated_at;
+        return { success: true, meta: { changes: 1 } };
+      }
+
+      if (
+        normalized ===
         "INSERT INTO subscription_cycles (id, subscription_id, cycle_index, period_start, period_end, status, scheduled_amount, currency, payment_method_id, toss_payment_key, toss_order_id, charged_at, failed_at, failure_code, failure_message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
       ) {
         const [
@@ -396,6 +432,85 @@ export function createBillingDbMock(initialState = {}) {
           .filter((entry) => entry.subscription_id === subscriptionId)
           .sort((left, right) => right.cycle_index - left.cycle_index)
           .map((entry) => ({ ...entry }));
+      }
+
+      if (
+        normalized ===
+        "SELECT c.id, c.subscription_id, c.cycle_index, c.period_start, c.period_end, c.status, c.scheduled_amount, c.currency, c.payment_method_id, c.toss_payment_key, c.toss_order_id, c.charged_at, c.failed_at, c.failure_code, c.failure_message, c.created_at, c.updated_at FROM subscription_cycles c INNER JOIN subscriptions s ON s.id = c.subscription_id WHERE s.user_id = ? ORDER BY c.created_at DESC"
+      ) {
+        const [userId] = values;
+        return state.subscriptionCycles
+          .filter((entry) =>
+            state.subscriptions.some(
+              (subscription) =>
+                subscription.id === entry.subscription_id &&
+                subscription.user_id === userId,
+            ),
+          )
+          .sort((left, right) =>
+            right.created_at.localeCompare(left.created_at),
+          )
+          .map((entry) => ({ ...entry }));
+      }
+
+      if (
+        normalized ===
+        "SELECT id, subscription_id, cycle_index, period_start, period_end, status, scheduled_amount, currency, payment_method_id, toss_payment_key, toss_order_id, charged_at, failed_at, failure_code, failure_message, created_at, updated_at FROM subscription_cycles WHERE toss_order_id = ?"
+      ) {
+        const [orderId] = values;
+        return (
+          state.subscriptionCycles.find(
+            (entry) => entry.toss_order_id === orderId,
+          ) ?? null
+        );
+      }
+
+      if (
+        normalized ===
+        "SELECT id, subscription_id, cycle_index, period_start, period_end, status, scheduled_amount, currency, payment_method_id, toss_payment_key, toss_order_id, charged_at, failed_at, failure_code, failure_message, created_at, updated_at FROM subscription_cycles WHERE toss_payment_key = ?"
+      ) {
+        const [paymentKey] = values;
+        return (
+          state.subscriptionCycles.find(
+            (entry) => entry.toss_payment_key === paymentKey,
+          ) ?? null
+        );
+      }
+
+      if (
+        normalized ===
+        "UPDATE subscription_cycles SET status = ?, period_start = ?, period_end = ?, toss_payment_key = ?, charged_at = ?, failed_at = ?, failure_code = ?, failure_message = ?, updated_at = ? WHERE id = ?"
+      ) {
+        const [
+          status,
+          period_start,
+          period_end,
+          toss_payment_key,
+          charged_at,
+          failed_at,
+          failure_code,
+          failure_message,
+          updated_at,
+          cycleId,
+        ] = values;
+        const cycle = state.subscriptionCycles.find(
+          (entry) => entry.id === cycleId,
+        );
+
+        if (!cycle) {
+          return { success: true, meta: { changes: 0 } };
+        }
+
+        cycle.status = status;
+        cycle.period_start = period_start;
+        cycle.period_end = period_end;
+        cycle.toss_payment_key = toss_payment_key;
+        cycle.charged_at = charged_at;
+        cycle.failed_at = failed_at;
+        cycle.failure_code = failure_code;
+        cycle.failure_message = failure_message;
+        cycle.updated_at = updated_at;
+        return { success: true, meta: { changes: 1 } };
       }
 
       if (
@@ -574,6 +689,10 @@ export function createBillingEnv(initialState = {}) {
     KAKAO_OAUTH_CLIENT_SECRET: "kakao-client-secret",
     NAVER_OAUTH_CLIENT_ID: "naver-client-id",
     NAVER_OAUTH_CLIENT_SECRET: "naver-client-secret",
+    TOSS_PAYMENTS_CLIENT_KEY: "test_ck_stage2",
+    TOSS_PAYMENTS_SECRET_KEY: "test_sk_stage2",
+    TOSS_PAYMENTS_ENVIRONMENT: "test",
+    TOSS_PAYMENTS_API_BASE_URL: "https://api.tosspayments.com",
     DB: createBillingDbMock(initialState),
   };
 }
@@ -601,4 +720,37 @@ export function createExecutionContext() {
     waitUntil() {},
     passThroughOnException() {},
   };
+}
+
+export async function withPatchedFetch(handler, run) {
+  const originalFetch = globalThis.fetch;
+
+  globalThis.fetch = async (input, init) => {
+    const request =
+      input instanceof Request ? input : new Request(String(input), init);
+    const mocked = await handler(request);
+
+    if (mocked) {
+      return mocked;
+    }
+
+    if (typeof originalFetch !== "function") {
+      throw new Error(`Unexpected fetch: ${request.url}`);
+    }
+
+    return originalFetch(input, init);
+  };
+
+  try {
+    return await run();
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+export function createTossApiResponse(payload, init = {}) {
+  return Response.json(payload, {
+    status: init.status ?? 200,
+    headers: init.headers,
+  });
 }

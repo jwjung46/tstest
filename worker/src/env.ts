@@ -6,6 +6,10 @@ export type WorkerEnv = Env & {
   KAKAO_OAUTH_CLIENT_SECRET: string;
   NAVER_OAUTH_CLIENT_ID: string;
   NAVER_OAUTH_CLIENT_SECRET: string;
+  TOSS_PAYMENTS_CLIENT_KEY: string;
+  TOSS_PAYMENTS_SECRET_KEY: string;
+  TOSS_PAYMENTS_ENVIRONMENT: "test" | "live";
+  TOSS_PAYMENTS_API_BASE_URL?: string;
   DB: D1Database;
 };
 

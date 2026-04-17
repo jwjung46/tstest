@@ -1,6 +1,6 @@
 # tstest
 
-Cloudflare Worker auth/session boundary on top of a feature-closed protected app. The current repo includes internal `users` + `user_identities`, provider linking, merge foundations, personal notes, and a Stage 1 Toss subscription foundation built around internal-user billing ownership.
+Cloudflare Worker auth/session boundary on top of a feature-closed protected app. The current repo includes internal `users` + `user_identities`, provider linking, merge foundations, personal notes, and a Stage 2 Toss one-time payment integration built around internal-user billing ownership.
 
 ## Current Scope
 
@@ -9,7 +9,7 @@ Cloudflare Worker auth/session boundary on top of a feature-closed protected app
 - Worker-owned routes: `/auth/*`, `/api/*`
 - Auth providers: Google, Kakao, Naver
 - Canonical account model: internal user + linked identities
-- Current `/app` scope: account/session surfaces, billing overview, and personal notes
+- Current `/app` scope: account/session surfaces, real Toss billing testing, and personal notes
 
 ## Architecture
 
@@ -30,38 +30,80 @@ The protected app shell composes feature modules. Billing and notes stay inside 
 - Linking is explicit and only allowed while signed in.
 - Automatic email linking, unlink UI, and end-user merge UI are intentionally not shipped yet.
 
-## Billing Stage 1
+## Billing Stage 2
 
-Stage 1 adds the durable internal billing foundation so Stage 2 can attach real Toss integration without redesign:
+Stage 2 keeps the Stage 1 schema and internal ownership model intact, then attaches real Toss one-time payment flow on top:
 
-- `billing_customers`: internal user to external billing customer mapping
-- `billing_payment_methods`: billing-key and payment-method lifecycle storage
-- `subscription_plans`: seeded plan catalog including `free` and `pro_monthly`
-- `subscriptions`: internal subscription contracts
-- `subscription_cycles`: recurring billing period records
-- `billing_events`: idempotent event log for API/webhook processing
-- `entitlements`: app-level feature access source of truth
-- `manual_entitlement_overrides`: future-safe operational overrides
+- `pro_monthly` currently means a one-time 30-day paid access contract
+- successful one-time payment sets `current_period_start = payment success time`
+- successful one-time payment sets `current_period_end = success time + 30 days`
+- entitlements remain the final feature-access layer
+- recurring charge approval, billing keys, and scheduler-driven renewal are not implemented yet
 
 The Worker billing domain lives under `worker/src/billing`:
 
 - `repository.ts`: D1 access only
-- `service.ts`: billing orchestration and subscription lifecycle
+- `service.ts`: checkout, confirm, reconciliation, subscription lifecycle, and entitlement updates
 - `entitlements.ts`: entitlement recomputation and access queries
-- `toss-client.ts`: stable Toss abstraction for Stage 2
+- `toss-client.ts`: real Toss HTTP client, payload normalization, and typed billing errors
 - `api.ts`: Worker route handlers
 
 ### Billing API
 
 - `POST /api/billing/customer/bootstrap`
+- `POST /api/billing/checkout/session`
+- `POST /api/billing/checkout/confirm`
+- `GET /api/billing/checkout/result`
 - `GET /api/billing/subscription`
 - `GET /api/billing/entitlements`
 - `GET /api/billing/history`
-- `POST /api/billing/subscriptions`
 - `POST /api/billing/subscriptions/:id/cancel`
 - `POST /api/webhooks/toss`
 
 Authenticated billing endpoints derive the current internal user from the session. The webhook endpoint does not depend on a logged-in user.
+
+### Checkout, Confirm, and Webhook Flow
+
+1. Signed-in internal user chooses `pro_monthly` in the protected billing UI.
+2. `POST /api/billing/checkout/session` creates a pending `subscription_cycles` record with a unique `toss_order_id`.
+3. The frontend opens Toss Payments with the Worker-issued client key, amount, order id, and redirect URLs.
+4. Toss redirects back to `/app` on success or fail.
+5. On success, the frontend calls `POST /api/billing/checkout/confirm`.
+6. The Worker confirms with Toss using the secret key, validates `paymentKey`, `orderId`, and `amount`, then marks the cycle paid and the subscription active.
+7. Entitlements are recomputed from the internal subscription state.
+8. `POST /api/webhooks/toss` stores the raw payload, dedupes by event key, and safely reconciles later delivery against the same internal cycle/subscription records.
+
+### Toss Environment Keys
+
+Required Worker env/secrets:
+
+- `TOSS_PAYMENTS_CLIENT_KEY`
+- `TOSS_PAYMENTS_SECRET_KEY`
+- `TOSS_PAYMENTS_ENVIRONMENT`
+- `TOSS_PAYMENTS_API_BASE_URL` optional override, defaults to `https://api.tosspayments.com`
+
+`TOSS_PAYMENTS_CLIENT_KEY` is only exposed to the frontend through the authenticated checkout-session response. `TOSS_PAYMENTS_SECRET_KEY` stays Worker-only.
+
+### Cloudflare Local and Deployment Setup
+
+Add the Toss keys to the same Worker environment that already owns `/auth/*` and `/api/*`.
+
+Local `.dev.vars` example:
+
+```bash
+AUTH_COOKIE_SECRET=...
+GOOGLE_OAUTH_CLIENT_ID=...
+GOOGLE_OAUTH_CLIENT_SECRET=...
+KAKAO_OAUTH_CLIENT_ID=...
+KAKAO_OAUTH_CLIENT_SECRET=...
+NAVER_OAUTH_CLIENT_ID=...
+NAVER_OAUTH_CLIENT_SECRET=...
+TOSS_PAYMENTS_CLIENT_KEY=test_ck_...
+TOSS_PAYMENTS_SECRET_KEY=test_sk_...
+TOSS_PAYMENTS_ENVIRONMENT=test
+```
+
+If the Toss client key or secret key is missing, checkout/session and confirm requests fail with a clear billing configuration error instead of silently starting a broken flow.
 
 ## Notes Feature
 
@@ -110,16 +152,14 @@ npm run build
 node --test tests/auth-session.test.mjs tests/oauth-worker.test.mjs tests/notes-model.test.mjs tests/notes-worker.test.mjs
 ```
 
-## Stage 2 Still Required
+## Still Deferred
 
-Stage 1 does not yet include:
-
-- real Toss client key / secret wiring
-- billing-key registration and authKey confirmation
-- real recurring charge approval
-- real webhook signature and payload verification
-- recurring charge scheduling
-- production payment-method UX
+- real recurring billing approval
+- Toss billing-key lifecycle
+- scheduler-driven renewals
+- recurring cancel/resume semantics
+- real webhook signature/domain verification hardening
+- durable session persistence beyond the current signed-cookie session boundary
 
 ## Project Docs
 

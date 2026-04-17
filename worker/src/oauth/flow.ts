@@ -60,11 +60,23 @@ function isSecureRequest(url: URL) {
 }
 
 function getClientId(env: WorkerEnv, provider: OAuthProviderConfig) {
-  return env[provider.clientIdEnv as WorkerEnvKey];
+  const value = env[provider.clientIdEnv as WorkerEnvKey];
+
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`Missing OAuth client id for ${provider.id}`);
+  }
+
+  return value;
 }
 
 function getClientSecret(env: WorkerEnv, provider: OAuthProviderConfig) {
-  return env[provider.clientSecretEnv as WorkerEnvKey];
+  const value = env[provider.clientSecretEnv as WorkerEnvKey];
+
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`Missing OAuth client secret for ${provider.id}`);
+  }
+
+  return value;
 }
 
 function normalizeRedirectTarget(value: string | null) {
