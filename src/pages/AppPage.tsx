@@ -1,36 +1,32 @@
 import AppShell from "../app/layout/AppShell";
 import AuthenticatedSessionPanel from "../features/auth/ui/AuthenticatedSessionPanel";
+import { NotesWorkspace } from "../features/notes/index.ts";
 import SignOutForm from "../features/auth/ui/SignOutForm";
-import EmptyState from "../shared/ui/EmptyState";
 
 export default function AppPage() {
   return (
     <AppShell
       brand="Teamspace"
       title="Signed-in workspace"
-      subtitle="This protected area is intentionally minimal: confirm the current session, preserve the Worker-based auth boundary, and leave real product modules for later stages."
+      subtitle="The protected auth/session boundary stays intact while the first modular product feature lives inside the app shell."
       navigationItems={[
         {
-          label: "Module Slot A",
-          description: "Reserved for a future protected feature module.",
+          label: "Notes",
+          description: "Personal notes module backed by Worker APIs and D1.",
         },
         {
-          label: "Module Slot B",
-          description: "Keeps the app shell shape stable before product work.",
+          label: "Future Module",
+          description: "Reserved for the next protected feature module.",
         },
         {
-          label: "Module Slot C",
-          description: "Another future feature area, intentionally empty now.",
+          label: "Future Module",
+          description: "Keeps the modular app shell shape stable.",
         },
       ]}
       headerActions={<SignOutForm />}
     >
       <AuthenticatedSessionPanel />
-      <EmptyState
-        eyebrow="Main Content"
-        title="Protected app base"
-        description="The protected route boundary is active, the signed-in user is visible, and no real domain feature module has been started yet."
-      />
+      <NotesWorkspace />
     </AppShell>
   );
 }

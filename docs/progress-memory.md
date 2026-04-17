@@ -2,8 +2,8 @@
 
 ## Current status
 
-- Current stage: Phase 8 structure stabilization completed on top of the existing Worker auth/session boundary.
-- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, a Worker-handled sign-out endpoint, authenticated-home handling for `/`, a tri-state auth structure attached to the real session boundary, and an intentionally empty authenticated app shell that only shows current-user/session UX plus sign-out.
+- Current stage: Stage 9 notes feature completed on top of the existing Worker auth/session boundary.
+- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, a Worker-handled sign-out endpoint, authenticated-home handling for `/`, a tri-state auth structure attached to the real session boundary, and a first real protected feature module for personal notes with D1-backed CRUD inside the authenticated app shell.
 
 ## Completed work
 
@@ -112,6 +112,11 @@
 - What: Kept the Worker-based OAuth/session mechanics intact while moving protected-route composition into `app/router`, keeping auth-specific UI and auth-specific page interpretation inside `features/auth`, and reducing page-layer logic so `/` and `/app` act as composition entry points only.
 - Why: This locks the repository into a reusable authenticated web-app base before any Stage 9 product module work begins.
 
+### 22. Stage 9 personal notes feature
+
+- What: Added a D1-backed `notes` schema plus owner-scoped Worker CRUD endpoints under `/api/notes`, then implemented the first feature-closed product module under `src/features/notes` with a two-pane list/editor workspace, manual save, hard delete, empty/loading/error states, and tests for pure notes logic plus Worker API behavior.
+- Why: This turns the previously empty protected app base into the first reusable reference feature module without breaking the existing auth/session boundary or pushing notes logic into page components.
+
 ## Decisions fixed so far
 
 - Language: TypeScript.
@@ -126,9 +131,9 @@
 ## Not done yet
 
 - Durable session persistence beyond the current signed-cookie session boundary.
-- Any real protected feature module or product/domain screen inside `/app`.
 - Durable account management capabilities such as account linking, role systems, refresh-token rotation, or richer profile/settings flows.
+- Any Stage 10+ expansion beyond the initial personal notes module, such as search, sharing, tags, attachments, or separate note detail routes.
 
 ## Next planned stage
 
-- Start Stage 9 later by adding the first real protected feature module inside `features` without moving auth/session mechanics into page components or weakening the protected route boundary.
+- Expand beyond the Stage 9 notes baseline only after preserving the same feature-closed structure, Worker auth/session boundary, and D1 owner-scoped data access rules established here.

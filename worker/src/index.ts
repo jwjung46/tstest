@@ -5,6 +5,7 @@ import {
   createSignOutResponse,
 } from "./oauth/session.ts";
 import { isOAuthProviderId } from "./oauth/providers.ts";
+import { handleNotesRequest } from "./notes/api.ts";
 
 function matchAuthRoute(pathname: string) {
   const match = pathname.match(/^\/auth\/([^/]+)\/(start|callback)$/);
@@ -28,6 +29,12 @@ function matchAuthRoute(pathname: string) {
 async function handleRequest(request: Request, env: WorkerEnv) {
   const url = new URL(request.url);
   const isSecureRequest = url.protocol === "https:";
+
+  const notesResponse = await handleNotesRequest(request, env);
+
+  if (notesResponse) {
+    return notesResponse;
+  }
 
   if (url.pathname === "/api/session" && request.method === "GET") {
     return createSessionSnapshotResponse(env.AUTH_COOKIE_SECRET, request);

@@ -6,6 +6,7 @@ export type WorkerEnv = Env & {
   KAKAO_OAUTH_CLIENT_SECRET: string;
   NAVER_OAUTH_CLIENT_ID: string;
   NAVER_OAUTH_CLIENT_SECRET: string;
+  DB: D1Database;
 };
 
-export type WorkerEnvKey = keyof WorkerEnv;
+export type WorkerEnvKey = Exclude<keyof WorkerEnv, "DB">;
