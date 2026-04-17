@@ -1,7 +1,15 @@
-import AuthButton from "../shared/ui/AuthButton";
+import { useLocation, useSearchParams } from "react-router-dom";
+import OAuthLoginActions from "../features/auth/ui/OAuthLoginActions";
 import PageContainer from "../shared/ui/PageContainer";
 
 export default function HomePage() {
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const redirectTo =
+    typeof location.state?.from === "string" ? location.state.from : "/app";
+  const authError = searchParams.get("authError");
+  const authProvider = searchParams.get("authProvider");
+
   return (
     <PageContainer className="page-container--landing">
       <section className="landing-hero">
@@ -19,16 +27,18 @@ export default function HomePage() {
           <div className="landing-login-card__header">
             <p className="eyebrow">Login Entry</p>
             <p className="hint">
-              Social login UI is prepared, but real provider integration is not
-              connected in this phase.
+              Social login now starts real provider authorization while keeping
+              the auth/session boundary outside the page layer.
             </p>
           </div>
 
-          <div className="auth-button-group" aria-label="Planned social login">
-            <AuthButton provider="Google" disabled />
-            <AuthButton provider="Kakao" disabled />
-            <AuthButton provider="Naver" disabled />
-          </div>
+          {authError ? (
+            <p className="hint" role="status">
+              {`OAuth login with ${authProvider ?? "the provider"} did not complete (${authError}).`}
+            </p>
+          ) : null}
+
+          <OAuthLoginActions redirectTo={redirectTo} />
         </div>
       </section>
 
@@ -60,8 +70,8 @@ export default function HomePage() {
           <article className="capability-card">
             <h3>Connect real authentication later</h3>
             <p>
-              Replace disabled login buttons with real provider actions when the
-              auth layer is ready.
+              The login entry now starts real OAuth, while richer post-login UX
+              can arrive later without changing the route boundary again.
             </p>
           </article>
         </div>

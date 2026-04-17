@@ -3,22 +3,35 @@ import assert from "node:assert/strict";
 
 import {
   buildAuthRedirectTarget,
+  buildOAuthStartPath,
   getAuthState,
   getCurrentUser,
   getSession,
   isAuthenticated,
+  requireAuth,
   resolveAuthState,
 } from "../src/features/auth/model/auth.ts";
+import {
+  getSessionSnapshot,
+  resolveSessionSnapshotResponse,
+} from "../src/platform/session/session.ts";
 
-test("getAuthState returns unauthenticated in the current pre-OAuth state", () => {
+test("getSessionSnapshot starts in loading before session bootstrap completes", () => {
+  assert.deepEqual(getSessionSnapshot(), {
+    status: "loading",
+    session: null,
+  });
+});
+
+test("getAuthState reflects loading before session bootstrap completes", () => {
   assert.deepEqual(getAuthState(), {
-    status: "unauthenticated",
+    status: "loading",
     session: null,
     user: null,
   });
 });
 
-test("getSession returns null in the current pre-OAuth state", () => {
+test("getSession returns null before an authenticated session exists", () => {
   assert.equal(getSession(), null);
 });
 
@@ -54,6 +67,27 @@ test("resolveAuthState exposes session and user for authenticated state", () => 
   });
 });
 
+test("resolveSessionSnapshotResponse maps missing session payloads to unauthenticated", () => {
+  assert.deepEqual(resolveSessionSnapshotResponse({ session: null }), {
+    status: "unauthenticated",
+    session: null,
+  });
+});
+
+test("requireAuth centralizes protected-route interpretation", () => {
+  assert.deepEqual(
+    requireAuth({
+      status: "unauthenticated",
+      session: null,
+      user: null,
+    }),
+    {
+      allowed: false,
+      reason: "unauthenticated",
+    },
+  );
+});
+
 test("buildAuthRedirectTarget preserves pathname, search, and hash", () => {
   assert.equal(
     buildAuthRedirectTarget({
@@ -62,5 +96,12 @@ test("buildAuthRedirectTarget preserves pathname, search, and hash", () => {
       hash: "#memo",
     }),
     "/app/projects?tab=open#memo",
+  );
+});
+
+test("buildOAuthStartPath preserves the protected redirect target", () => {
+  assert.equal(
+    buildOAuthStartPath("google", "/app/projects?tab=open#memo"),
+    "/auth/google/start?redirectTo=%2Fapp%2Fprojects%3Ftab%3Dopen%23memo",
   );
 });

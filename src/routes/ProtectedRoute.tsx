@@ -3,14 +3,16 @@ import EmptyState from "../shared/ui/EmptyState";
 import PageContainer from "../shared/ui/PageContainer";
 import {
   buildAuthRedirectTarget,
-  getAuthState,
+  requireAuth,
 } from "../features/auth/model/auth";
+import { useAuthState } from "../features/auth/model/useAuthState";
 
 export default function ProtectedRoute() {
   const location = useLocation();
-  const authState = getAuthState();
+  const authState = useAuthState();
+  const authRequirement = requireAuth(authState);
 
-  if (authState.status === "loading") {
+  if (!authRequirement.allowed && authRequirement.reason === "loading") {
     return (
       <PageContainer className="page-container--landing">
         <EmptyState
@@ -22,7 +24,10 @@ export default function ProtectedRoute() {
     );
   }
 
-  if (authState.status === "unauthenticated") {
+  if (
+    !authRequirement.allowed &&
+    authRequirement.reason === "unauthenticated"
+  ) {
     return (
       <Navigate
         to="/"
