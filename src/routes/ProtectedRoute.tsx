@@ -1,10 +1,11 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { isAuthenticated } from "../features/auth/model/auth";
+import { getSession } from "../features/auth/model/auth";
 
 export default function ProtectedRoute() {
   const location = useLocation();
+  const session = getSession();
 
-  if (!isAuthenticated()) {
+  if (!session) {
     return <Navigate to="/" replace state={{ from: location.pathname }} />;
   }
 
