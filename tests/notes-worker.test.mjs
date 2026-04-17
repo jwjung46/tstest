@@ -371,6 +371,8 @@ test("billing customer bootstrap creates one Toss billing customer per internal 
   const firstPayload = await firstResponse.json();
   assert.equal(firstPayload.customer.userId, "user-1");
   assert.equal(firstPayload.customer.provider, "toss_payments");
+  assert.match(firstPayload.customer.customerKey, /^tcus_[a-f0-9]+$/);
+  assert.ok(firstPayload.customer.customerKey.length <= 50);
   assert.equal(firstPayload.subscription, null);
   assert.deepEqual(
     firstPayload.entitlements.map((entry) => entry.featureKey),
@@ -397,6 +399,48 @@ test("billing customer bootstrap creates one Toss billing customer per internal 
   const secondPayload = await secondResponse.json();
   assert.equal(secondPayload.customer.id, firstPayload.customer.id);
   assert.equal(env.DB.state.billingCustomers.length, 1);
+});
+
+test("billing customer bootstrap upgrades a legacy Toss customer key to the canonical rule", async () => {
+  const env = createStage2BillingEnv({
+    billingCustomers: [
+      {
+        id: "bcus_legacy",
+        user_id: "user-1",
+        provider: "toss_payments",
+        customer_key:
+          "toss_customer_internal-user-1234567890-provider-independent-abcdefghijklmnopqrstuvwxyz",
+        created_at: "2026-04-18T09:00:00.000Z",
+        updated_at: "2026-04-18T09:00:00.000Z",
+      },
+    ],
+  });
+  const cookie = await createCookieHeader(env.AUTH_COOKIE_SECRET);
+
+  const response = await worker.fetch(
+    new Request("https://example.com/api/billing/customer/bootstrap", {
+      method: "POST",
+      headers: {
+        cookie,
+      },
+    }),
+    env,
+    createExecutionContext(),
+  );
+
+  assert.equal(response.status, 200);
+  const payload = await response.json();
+  assert.equal(payload.customer.id, "bcus_legacy");
+  assert.match(payload.customer.customerKey, /^tcus_[a-f0-9]+$/);
+  assert.ok(payload.customer.customerKey.length <= 50);
+  assert.equal(
+    env.DB.state.billingCustomers[0].customer_key,
+    payload.customer.customerKey,
+  );
+  assert.notEqual(
+    env.DB.state.billingCustomers[0].customer_key,
+    "toss_customer_internal-user-1234567890-provider-independent-abcdefghijklmnopqrstuvwxyz",
+  );
 });
 
 test("billing ownership stays attached to the internal user when the login provider changes", async () => {

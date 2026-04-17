@@ -63,6 +63,26 @@ export async function createBillingCustomer(
   };
 }
 
+export async function updateBillingCustomerKey(
+  db: D1Database,
+  {
+    customerId,
+    customerKey,
+    now,
+  }: {
+    customerId: string;
+    customerKey: string;
+    now: string;
+  },
+) {
+  await db
+    .prepare(
+      "UPDATE billing_customers SET customer_key = ?, updated_at = ? WHERE id = ?",
+    )
+    .bind(customerKey, now, customerId)
+    .run();
+}
+
 export async function listActivePlans(
   db: D1Database,
 ): Promise<SubscriptionPlanRecord[]> {

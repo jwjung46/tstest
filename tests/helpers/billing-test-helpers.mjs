@@ -175,6 +175,23 @@ export function createBillingDbMock(initialState = {}) {
 
       if (
         normalized ===
+        "UPDATE billing_customers SET customer_key = ?, updated_at = ? WHERE id = ?"
+      ) {
+        const [customer_key, updated_at, id] = values;
+        const customer = state.billingCustomers.find(
+          (entry) => entry.id === id,
+        );
+        if (!customer) {
+          return { success: true, meta: { changes: 0 } };
+        }
+
+        customer.customer_key = customer_key;
+        customer.updated_at = updated_at;
+        return { success: true, meta: { changes: 1 } };
+      }
+
+      if (
+        normalized ===
         "SELECT id, plan_code, name, billing_interval, currency, amount, is_active, created_at, updated_at FROM subscription_plans WHERE is_active = 1 ORDER BY amount ASC, created_at ASC"
       ) {
         return state.subscriptionPlans

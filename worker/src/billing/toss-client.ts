@@ -8,6 +8,8 @@ import {
 } from "./types.ts";
 
 const DEFAULT_TOSS_API_BASE_URL = "https://api.tosspayments.com";
+const TOSS_CUSTOMER_KEY_PREFIX = "tcus_";
+const TOSS_CUSTOMER_KEY_HASH_LENGTH = 32;
 
 export class TossBillingError extends Error {
   code: string;
@@ -32,6 +34,7 @@ export class TossBillingError extends Error {
 export type TossBillingClient = {
   providerId: BillingProviderId;
   createOrReuseCustomerKey(userId: string): string;
+  isCanonicalCustomerKey(customerKey: string): boolean;
   getConfig(env: WorkerEnv): TossConfig;
   ensureBillingCustomer(userId: string): Promise<{
     provider: BillingProviderId;
@@ -196,8 +199,33 @@ async function requestTossJson(
   return payload;
 }
 
+function createStableUserHash(userId: string) {
+  let hashA = 0xcbf29ce484222325n;
+  let hashB = 0x84222325cbf29cen;
+  const prime = 0x100000001b3n;
+  const mask = 0xffffffffffffffffn;
+
+  for (let index = 0; index < userId.length; index += 1) {
+    const codePoint = BigInt(userId.charCodeAt(index));
+    hashA ^= codePoint;
+    hashA = (hashA * prime) & mask;
+    hashB ^= codePoint + 0x9bn;
+    hashB = (hashB * prime) & mask;
+  }
+
+  return `${hashA.toString(16).padStart(16, "0")}${hashB
+    .toString(16)
+    .padStart(16, "0")}`.slice(0, TOSS_CUSTOMER_KEY_HASH_LENGTH);
+}
+
 export function createOrReuseCustomerKey(userId: string) {
-  return `toss_customer_${userId.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+  return `${TOSS_CUSTOMER_KEY_PREFIX}${createStableUserHash(userId)}`;
+}
+
+export function isCanonicalCustomerKey(customerKey: string) {
+  return new RegExp(
+    `^${TOSS_CUSTOMER_KEY_PREFIX}[a-f0-9]{${TOSS_CUSTOMER_KEY_HASH_LENGTH}}$`,
+  ).test(customerKey);
 }
 
 export function getTossPaymentsConfig(env: WorkerEnv): TossConfig {
@@ -279,6 +307,7 @@ export function createTossBillingClient(): TossBillingClient {
   return {
     providerId: BILLING_PROVIDER_ID,
     createOrReuseCustomerKey,
+    isCanonicalCustomerKey,
     getConfig: getTossPaymentsConfig,
     async ensureBillingCustomer(userId) {
       return {

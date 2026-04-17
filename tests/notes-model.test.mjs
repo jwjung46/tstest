@@ -7,7 +7,15 @@ import {
   hasEntitlement,
   recomputeEntitlements,
 } from "../worker/src/billing/entitlements.ts";
+import {
+  createOrReuseCustomerKey,
+  isCanonicalCustomerKey,
+} from "../worker/src/billing/toss-client.ts";
 import { createBillingDbMock } from "./helpers/billing-test-helpers.mjs";
+import {
+  getBillingCustomerDisplayLabel,
+  getBillingOwnershipDisplayLabel,
+} from "../src/features/billing/model/customer-display.ts";
 import { parseBillingCheckoutReturn } from "../src/features/billing/model/checkout-result.ts";
 import {
   buildWorkspaceSelectionState,
@@ -21,6 +29,40 @@ import {
   canSaveNoteDraft,
   validateNoteInput,
 } from "../src/features/notes/model/note-validation.ts";
+
+test("createOrReuseCustomerKey returns a stable Toss-safe canonical key within 50 chars", () => {
+  const longUserId =
+    "internal-user-1234567890-provider-independent-abcdefghijklmnopqrstuvwxyz";
+  const firstKey = createOrReuseCustomerKey(longUserId);
+  const secondKey = createOrReuseCustomerKey(longUserId);
+  const otherKey = createOrReuseCustomerKey("user-2");
+
+  assert.equal(firstKey, secondKey);
+  assert.notEqual(firstKey, otherKey);
+  assert.equal(isCanonicalCustomerKey(firstKey), true);
+  assert.match(firstKey, /^tcus_[a-f0-9]+$/);
+  assert.ok(firstKey.length <= 50);
+});
+
+test("canonical customer key does not expose the raw internal user id", () => {
+  const userId = "user-1";
+  const customerKey = createOrReuseCustomerKey(userId);
+
+  assert.equal(customerKey.includes(userId), false);
+});
+
+test("billing customer and ownership display labels stay masked for account UI", () => {
+  assert.equal(
+    getBillingCustomerDisplayLabel("tcus_1234567890abcdef1234567890abcd"),
+    "Toss customer ••••abcd",
+  );
+  assert.equal(
+    getBillingOwnershipDisplayLabel("internal-user-1234567890"),
+    "Internal account ••••7890",
+  );
+  assert.equal(getBillingCustomerDisplayLabel(null), "-");
+  assert.equal(getBillingOwnershipDisplayLabel(""), "-");
+});
 
 test("validateNoteInput rejects a note when title and content are both empty", () => {
   assert.deepEqual(validateNoteInput({ title: "", content: "" }), {

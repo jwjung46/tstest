@@ -31,6 +31,7 @@ import {
   listCyclesByUserId,
   listEntitlementsByUserId,
   markSubscriptionCanceled,
+  updateBillingCustomerKey,
   updateBillingEventProcessing,
   updateSubscriptionBillingState,
   updateSubscriptionCycleState,
@@ -552,6 +553,22 @@ export async function ensureBillingCustomer(
   const existingCustomer = await findBillingCustomerByUserId(db, userId);
 
   if (existingCustomer) {
+    const canonicalCustomerKey = tossClient.createOrReuseCustomerKey(userId);
+
+    if (existingCustomer.customer_key !== canonicalCustomerKey) {
+      await updateBillingCustomerKey(db, {
+        customerId: existingCustomer.id,
+        customerKey: canonicalCustomerKey,
+        now,
+      });
+
+      return mapCustomer({
+        ...existingCustomer,
+        customer_key: canonicalCustomerKey,
+        updated_at: now,
+      });
+    }
+
     return mapCustomer(existingCustomer);
   }
 

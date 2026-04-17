@@ -1,4 +1,8 @@
 import { useBillingOverview } from "../model/useBillingOverview.ts";
+import {
+  getBillingCustomerDisplayLabel,
+  getBillingOwnershipDisplayLabel,
+} from "../model/customer-display.ts";
 
 function formatPrice(currency: string, amount: number) {
   return new Intl.NumberFormat("ko-KR", {
@@ -129,11 +133,19 @@ export default function BillingOverviewPanel() {
           <dl className="billing-meta">
             <div className="billing-meta__row">
               <dt>Billing customer</dt>
-              <dd>{billing.customer?.customerKey ?? "-"}</dd>
+              <dd>
+                {getBillingCustomerDisplayLabel(
+                  billing.customer?.customerKey ?? null,
+                )}
+              </dd>
             </div>
             <div className="billing-meta__row">
               <dt>Ownership</dt>
-              <dd>{billing.customer?.userId ?? "-"}</dd>
+              <dd>
+                {getBillingOwnershipDisplayLabel(
+                  billing.customer?.userId ?? null,
+                )}
+              </dd>
             </div>
             <div className="billing-meta__row">
               <dt>Current period</dt>

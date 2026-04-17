@@ -38,6 +38,7 @@ Stage 2 keeps the Stage 1 schema and internal ownership model intact, then attac
 - successful one-time payment sets `current_period_start = payment success time`
 - successful one-time payment sets `current_period_end = success time + 30 days`
 - entitlements remain the final feature-access layer
+- Toss `customerKey` is a short deterministic internal-user-derived key, while ownership still stays anchored by `billing_customers.user_id`
 - recurring charge approval, billing keys, and scheduler-driven renewal are not implemented yet
 
 The Worker billing domain lives under `worker/src/billing`:
