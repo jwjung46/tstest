@@ -19,15 +19,25 @@ test("public auth entry stays minimal and auth-focused", () => {
   assert.equal(file.includes("Recent login:"), true);
 });
 
-test("/app route composition stays focused on live product surfaces", () => {
-  const appPage = readRepoFile("src/pages/AppPage.tsx");
-  const appShell = readRepoFile("src/app/layout/AppShell.tsx");
+test("/app route composition is split into protected layout and page entries", () => {
+  const router = readRepoFile("src/app/router.tsx");
+  const routePaths = readRepoFile("src/app/router/paths.ts");
+  const protectedAppLayout = readRepoFile(
+    "src/app/layout/ProtectedAppLayout.tsx",
+  );
+  const appHomePage = readRepoFile("src/pages/AppHomePage.tsx");
+  const appAccountPage = readRepoFile("src/pages/AppAccountPage.tsx");
+  const appSubscriptionPage = readRepoFile("src/pages/AppSubscriptionPage.tsx");
 
-  assert.equal(appPage.includes("AuthenticatedSessionPanel"), true);
-  assert.equal(appPage.includes("BillingOverviewPanel"), true);
-  assert.equal(appPage.includes("NotesWorkspace"), true);
-  assert.equal(appPage.includes("ThemeSelector"), true);
-  assert.equal(appPage.includes("SignOutForm"), true);
-  assert.equal(appShell.includes('className="app-shell__header"'), true);
-  assert.equal(appShell.includes('className="app-shell__content"'), true);
+  assert.equal(router.includes("ProtectedAppLayout"), true);
+  assert.equal(router.includes("APP_ROUTE_SEGMENTS.account"), true);
+  assert.equal(router.includes("APP_ROUTE_SEGMENTS.subscription"), true);
+  assert.equal(routePaths.includes('home: "/app"'), true);
+  assert.equal(routePaths.includes('account: "/app/account"'), true);
+  assert.equal(routePaths.includes('subscription: "/app/subscription"'), true);
+  assert.equal(protectedAppLayout.includes("<AppShell"), true);
+  assert.equal(protectedAppLayout.includes("<Outlet />"), true);
+  assert.equal(appHomePage.includes("ProtectedHomePageContent"), true);
+  assert.equal(appAccountPage.includes("AccountPageContent"), true);
+  assert.equal(appSubscriptionPage.includes("SubscriptionPageContent"), true);
 });
