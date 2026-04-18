@@ -3,13 +3,13 @@
 ## Current status
 
 - Current stage: Stage 2 Toss one-time payment integration completed on top of the existing Stage 9 notes/account/auth baseline and the Stage 1 internal billing foundation.
-- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, signed sign-in vs link state handling, Worker-handled sign-out, internal `users` plus `user_identities`, internal-user-backed sessions, browser-local recent-login provider hinting, linked-provider lookup inside the protected app shell, merge foundations, personal notes with internal-user D1 ownership, and an internal-user-based Stage 2 Toss billing flow. Billing ownership is still internal-user-based only through `billing_customers.user_id`, not provider identity scoped, while Toss-facing `billing_customers.customer_key` is now a short deterministic internal-user-derived value safe for Toss limits. The billing domain includes `billing_customers`, `billing_payment_methods`, `subscription_plans`, `subscriptions`, `subscription_cycles`, `billing_events`, `entitlements`, and `manual_entitlement_overrides`, with real Toss HTTP access isolated behind `worker/src/billing/toss-client.ts`. Stage 2 webhook ingestion now derives delivery identity from Toss transmission headers, persists `billing_events` before reconciliation, dedupes by durable webhook event key, and marks accepted-but-unused deliveries as `ignored` instead of dropping them. Current `/app` scope is account/session surfaces, real Toss one-time billing testing, and the personal notes module. `pro_monthly` currently means a one-time 30-day paid access contract, not auto-renew.
+- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, signed sign-in vs link state handling, Worker-handled sign-out, internal `users` plus `user_identities`, internal-user-backed sessions, browser-local recent-login provider hinting, linked-provider lookup inside `/app`, merge foundations, personal notes with internal-user D1 ownership, and an internal-user-based Stage 2 Toss billing flow. Billing ownership is still internal-user-based only through `billing_customers.user_id`, not provider identity scoped, while Toss-facing `billing_customers.customer_key` is now a short deterministic internal-user-derived value safe for Toss limits. The billing domain includes `billing_customers`, `billing_payment_methods`, `subscription_plans`, `subscriptions`, `subscription_cycles`, `billing_events`, `entitlements`, and `manual_entitlement_overrides`, with real Toss HTTP access isolated behind `worker/src/billing/toss-client.ts`. Stage 2 webhook ingestion now derives delivery identity from Toss transmission headers, persists `billing_events` before reconciliation, dedupes by durable webhook event key, and marks accepted-but-unused deliveries as `ignored` instead of dropping them. Current `/app` scope is account/session surfaces, real Toss one-time billing testing, and the personal notes module. `pro_monthly` currently means a one-time 30-day paid access contract, not auto-renew.
 
 ## Completed work
 
 ### 1. Git repository
 
-- What: Created the Git repository and prepared it as the base workspace for this web app.
+- What: Created the Git repository and prepared the workspace for this web app.
 - Why: A clean repository is the starting point for version history, rollback, and continuous progress tracking.
 
 ### 2. Initial app setup
@@ -77,9 +77,9 @@
 - What: Added `react-router-dom`, split the app into route-specific pages, and created a guarded `/app` route backed by an early auth boundary.
 - Why: This gives the project a production-oriented route boundary now, while keeping real authentication implementation for the next step.
 
-### 15. Phase 3 public and protected route UI
+### 15. Phase 3 route-surface setup
 
-- What: Introduced the first public sign-in entry and protected route UI structure for the later Worker-backed auth flow.
+- What: Introduced the initial public sign-in surface and `/app` route composition for the later Worker-backed auth flow.
 - Why: This established page-level route surfaces before real authentication and product features were added.
 
 ### 16. Phase 4 session boundary refactor
@@ -100,11 +100,11 @@
 ### 19. Worker routing fix for auth and session APIs
 
 - What: Updated `wrangler.jsonc` so `/auth/*` and `/api/*` hit the Worker before the SPA fallback route.
-- Why: OAuth callbacks and session reads must execute at the Worker boundary instead of being swallowed by the client-side app shell.
+- Why: OAuth callbacks and session reads must execute at the Worker boundary instead of being swallowed by the client-side `/app` entry.
 
-### 20. Phase 6 first authenticated user experience
+### 20. Phase 6 authenticated route experience
 
-- What: Added a Worker-handled sign-out route, surfaced the signed-in user name and provider inside the protected app shell, redirected authenticated home visits to `/app`, and centralized public auth error messaging.
+- What: Added a Worker-handled sign-out route, surfaced the signed-in user name and provider inside `/app`, redirected authenticated home visits to `/app`, and centralized public auth error messaging.
 - Why: This adds the first useful post-login experience without changing the existing Worker-based OAuth/session architecture.
 
 ### 21. Phase 7 and Phase 8 completion pass
@@ -129,8 +129,8 @@
 
 ### 25. Reset-based account initialization cleanup
 
-- What: Rewrote the account-linking migration to create structure only, removed imported placeholder canonical-profile uplift logic from runtime sign-in, kept first successful sign-in as the only normal canonical profile initialization path, and preserved notes ownership under internal user ids.
-- Why: The project is still pre-launch and the database can be reset, so the supported path should be a clean internal-user model from the first successful sign-in instead of preserving temporary placeholder normalization branches.
+- What: Rewrote the account-linking migration to create structure only, removed temporary canonical-profile uplift logic from runtime sign-in, kept first successful sign-in as the only normal canonical profile initialization path, and preserved notes ownership under internal user ids.
+- Why: The project is still pre-launch and the database can be reset, so the supported path should be a clean internal-user model from the first successful sign-in instead of preserving temporary normalization branches.
 
 ### 26. Stage 1 Toss subscription foundation
 
