@@ -244,8 +244,11 @@ export function useBillingOverview() {
     availablePlans,
     cycles,
     events,
-    historyStatus:
-      historyQuery.isPending || historyQuery.isFetching ? "loading" : "ready",
+    historyStatus: !historyQuery.isEnabled
+      ? "idle"
+      : historyQuery.isPending
+        ? "loading"
+        : "ready",
     historyError: historyQuery.isError
       ? getErrorMessage(
           historyQuery.error,
@@ -255,5 +258,5 @@ export function useBillingOverview() {
     checkoutSession,
     checkoutResult: checkoutReturn ? checkoutResult : null,
     startCheckout,
-  };
+  } as const;
 }

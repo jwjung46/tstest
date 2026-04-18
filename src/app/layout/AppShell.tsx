@@ -25,13 +25,17 @@ export default function AppShell({
 
       <main
         className={[
-          "app-shell__content",
-          contentMode === "blank" ? "app-shell__content--blank" : "",
+          "app-shell__body",
+          contentMode === "blank" ? "app-shell__body--blank" : "",
         ]
           .filter(Boolean)
           .join(" ")}
       >
-        {children}
+        {contentMode === "blank" ? (
+          children
+        ) : (
+          <div className="app-shell__content">{children}</div>
+        )}
       </main>
     </div>
   );

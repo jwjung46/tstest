@@ -3,6 +3,7 @@ import {
   getBillingCustomerDisplayLabel,
   getBillingOwnershipDisplayLabel,
 } from "../model/customer-display.ts";
+import { getBillingOverviewView } from "../model/billing-overview-view.ts";
 
 function formatPrice(currency: string, amount: number) {
   return new Intl.NumberFormat("ko-KR", {
@@ -58,30 +59,7 @@ function getResultCopy(
 export default function BillingOverviewPanel() {
   const billing = useBillingOverview();
   const resultCopy = getResultCopy(billing.checkoutResult);
-
-  if (billing.status === "loading") {
-    return (
-      <section className="billing-panel">
-        <div className="billing-panel__header">
-          <p className="eyebrow">Billing</p>
-          <h2 className="billing-panel__title">Toss Payments Stage 2</h2>
-          <p className="hint">Loading your internal billing state.</p>
-        </div>
-      </section>
-    );
-  }
-
-  if (billing.status === "error") {
-    return (
-      <section className="billing-panel">
-        <div className="billing-panel__header">
-          <p className="eyebrow">Billing</p>
-          <h2 className="billing-panel__title">Toss Payments Stage 2</h2>
-          <p className="hint">{billing.error}</p>
-        </div>
-      </section>
-    );
-  }
+  const view = getBillingOverviewView(billing);
 
   return (
     <section className="billing-panel">
@@ -97,6 +75,16 @@ export default function BillingOverviewPanel() {
           paid access. Auto-renew and billing keys are not enabled in this
           stage.
         </p>
+      </div>
+
+      <div className="billing-section">
+        <div className="billing-section__header">
+          <div>
+            <p className="eyebrow">Summary</p>
+            <h3 className="billing-section__title">{view.summary.title}</h3>
+          </div>
+          <p className="hint">{view.summary.description}</p>
+        </div>
       </div>
 
       {resultCopy ? (
@@ -115,44 +103,54 @@ export default function BillingOverviewPanel() {
         </div>
       ) : null}
 
-      <div className="billing-grid">
+      <div className="billing-grid billing-grid--primary">
         <article className="billing-card">
           <div className="billing-card__header">
             <div>
               <p className="eyebrow">Current Subscription</p>
               <h3>
-                {billing.subscription
-                  ? billing.subscription.plan.name
-                  : "No paid contract yet"}
+                {billing.status === "loading"
+                  ? "Loading current subscription"
+                  : billing.subscription
+                    ? billing.subscription.plan.name
+                    : "No paid contract yet"}
               </h3>
             </div>
             <span className="billing-badge">
-              {billing.subscription?.status ?? "free"}
+              {billing.status === "loading"
+                ? "loading"
+                : (billing.subscription?.status ?? "free")}
             </span>
           </div>
           <dl className="billing-meta">
             <div className="billing-meta__row">
               <dt>Billing customer</dt>
               <dd>
-                {getBillingCustomerDisplayLabel(
-                  billing.customer?.customerKey ?? null,
-                )}
+                {billing.status === "loading"
+                  ? "Loading customer"
+                  : getBillingCustomerDisplayLabel(
+                      billing.customer?.customerKey ?? null,
+                    )}
               </dd>
             </div>
             <div className="billing-meta__row">
               <dt>Ownership</dt>
               <dd>
-                {getBillingOwnershipDisplayLabel(
-                  billing.customer?.userId ?? null,
-                )}
+                {billing.status === "loading"
+                  ? "Loading ownership"
+                  : getBillingOwnershipDisplayLabel(
+                      billing.customer?.userId ?? null,
+                    )}
               </dd>
             </div>
             <div className="billing-meta__row">
               <dt>Current period</dt>
               <dd>
-                {billing.subscription?.currentPeriodStart
-                  ? `${formatDate(billing.subscription.currentPeriodStart)} -> ${formatDate(billing.subscription.currentPeriodEnd)}`
-                  : "No paid access period yet"}
+                {billing.status === "loading"
+                  ? "Loading billing period"
+                  : billing.subscription?.currentPeriodStart
+                    ? `${formatDate(billing.subscription.currentPeriodStart)} -> ${formatDate(billing.subscription.currentPeriodEnd)}`
+                    : "No paid access period yet"}
               </dd>
             </div>
           </dl>
@@ -165,20 +163,32 @@ export default function BillingOverviewPanel() {
               <h3>Feature access source of truth</h3>
             </div>
           </div>
-          <ul className="billing-list">
-            {billing.entitlements.map((entitlement) => (
-              <li className="billing-list__item" key={entitlement.featureKey}>
-                <strong>{entitlement.featureKey}</strong>
-                <span>
-                  {entitlement.status} via {entitlement.sourceType}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {billing.status === "loading" ? (
+            <div className="billing-card__empty">
+              <strong>Loading entitlements</strong>
+              <span>Feature access state will appear with the summary.</span>
+            </div>
+          ) : billing.entitlements.length === 0 ? (
+            <div className="billing-card__empty">
+              <strong>No entitlement yet</strong>
+              <span>
+                Entitlements appear after subscription state is resolved.
+              </span>
+            </div>
+          ) : (
+            <ul className="billing-list">
+              {billing.entitlements.map((entitlement) => (
+                <li className="billing-list__item" key={entitlement.featureKey}>
+                  <strong>{entitlement.featureKey}</strong>
+                  <span>
+                    {entitlement.status} via {entitlement.sourceType}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </article>
-      </div>
 
-      <div className="billing-grid">
         <article className="billing-card">
           <div className="billing-card__header">
             <div>
@@ -186,49 +196,58 @@ export default function BillingOverviewPanel() {
               <h3>Real Toss checkout entry</h3>
             </div>
           </div>
-          <div className="billing-plan-grid">
-            {billing.availablePlans.map((plan) => {
-              const isPaidPlan = plan.planCode === "pro_monthly";
-              const isBusy = billing.actionStatus !== "idle";
+          {billing.status === "loading" ? (
+            <div className="billing-card__empty">
+              <strong>Loading plans</strong>
+              <span>
+                Checkout options appear after the summary response arrives.
+              </span>
+            </div>
+          ) : (
+            <div className="billing-plan-grid">
+              {billing.availablePlans.map((plan) => {
+                const isPaidPlan = plan.planCode === "pro_monthly";
+                const isBusy = billing.actionStatus !== "idle";
 
-              return (
-                <div className="billing-plan-card" key={plan.id}>
-                  <div className="billing-plan-card__copy">
-                    <strong>{plan.name}</strong>
-                    <span>{plan.planCode}</span>
-                    <p className="hint">
-                      {isPaidPlan
-                        ? "One-time payment. Server confirm activates 30 days of pro access."
-                        : "Default fallback entitlement set for signed-in users."}
-                    </p>
+                return (
+                  <div className="billing-plan-card" key={plan.id}>
+                    <div className="billing-plan-card__copy">
+                      <strong>{plan.name}</strong>
+                      <span>{plan.planCode}</span>
+                      <p className="hint">
+                        {isPaidPlan
+                          ? "One-time payment. Server confirm activates 30 days of pro access."
+                          : "Default fallback entitlement set for signed-in users."}
+                      </p>
+                    </div>
+                    <div className="billing-plan-card__footer">
+                      <strong>{formatPrice(plan.currency, plan.amount)}</strong>
+                      {isPaidPlan ? (
+                        <button
+                          className="notes-button notes-button--primary"
+                          disabled={isBusy}
+                          onClick={() => {
+                            void billing.startCheckout(plan.planCode);
+                          }}
+                          type="button"
+                        >
+                          {billing.actionStatus === "starting"
+                            ? "Opening Toss..."
+                            : billing.actionStatus === "confirming"
+                              ? "Confirming..."
+                              : "Pay with Toss"}
+                        </button>
+                      ) : (
+                        <button className="notes-button" disabled type="button">
+                          Included
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="billing-plan-card__footer">
-                    <strong>{formatPrice(plan.currency, plan.amount)}</strong>
-                    {isPaidPlan ? (
-                      <button
-                        className="notes-button notes-button--primary"
-                        disabled={isBusy}
-                        onClick={() => {
-                          void billing.startCheckout(plan.planCode);
-                        }}
-                        type="button"
-                      >
-                        {billing.actionStatus === "starting"
-                          ? "Opening Toss..."
-                          : billing.actionStatus === "confirming"
-                            ? "Confirming..."
-                            : "Pay with Toss"}
-                      </button>
-                    ) : (
-                      <button className="notes-button" disabled type="button">
-                        Included
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </article>
 
         <article className="billing-card">
@@ -241,7 +260,10 @@ export default function BillingOverviewPanel() {
           <dl className="billing-meta">
             <div className="billing-meta__row">
               <dt>Order ID</dt>
-              <dd>{billing.checkoutSession?.orderId ?? "-"}</dd>
+              <dd>
+                {billing.checkoutSession?.orderId ??
+                  (billing.status === "loading" ? "Waiting for summary" : "-")}
+              </dd>
             </div>
             <div className="billing-meta__row">
               <dt>Amount</dt>
@@ -264,7 +286,17 @@ export default function BillingOverviewPanel() {
         </article>
       </div>
 
-      <div className="billing-grid">
+      <div className="billing-section">
+        <div className="billing-section__header">
+          <div>
+            <p className="eyebrow">Activity</p>
+            <h3 className="billing-section__title">{view.secondary.title}</h3>
+          </div>
+          <p className="hint">{view.secondary.description}</p>
+        </div>
+      </div>
+
+      <div className="billing-grid billing-grid--secondary">
         <article className="billing-card">
           <div className="billing-card__header">
             <div>
@@ -273,7 +305,14 @@ export default function BillingOverviewPanel() {
             </div>
           </div>
           <ul className="billing-list">
-            {billing.historyStatus === "loading" ? (
+            {billing.historyStatus === "idle" ? (
+              <li className="billing-list__item">
+                <strong>Summary required first</strong>
+                <span>
+                  History stays secondary until the summary is available.
+                </span>
+              </li>
+            ) : billing.historyStatus === "loading" ? (
               <li className="billing-list__item">
                 <strong>Loading cycle history</strong>
                 <span>Recent payment cycles are being fetched separately.</span>
@@ -314,7 +353,14 @@ export default function BillingOverviewPanel() {
             </div>
           </div>
           <ul className="billing-list">
-            {billing.historyStatus === "loading" ? (
+            {billing.historyStatus === "idle" ? (
+              <li className="billing-list__item">
+                <strong>Summary required first</strong>
+                <span>
+                  Billing events appear after the summary is available.
+                </span>
+              </li>
+            ) : billing.historyStatus === "loading" ? (
               <li className="billing-list__item">
                 <strong>Loading billing events</strong>
                 <span>
