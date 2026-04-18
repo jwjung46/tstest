@@ -1,6 +1,6 @@
 # tstest
 
-Cloudflare Worker-backed authenticated web app with internal `users` + `user_identities`, provider linking, merge foundations, personal notes, and a Stage 2 Toss one-time payment integration built around internal-user billing ownership.
+Cloudflare Worker auth/session boundary for an application with internal `users` + `user_identities`, provider linking, merge foundations, personal notes, and a Stage 2 Toss one-time payment integration built around internal-user billing ownership.
 
 ## Current Scope
 
@@ -18,7 +18,7 @@ Cloudflare Worker-backed authenticated web app with internal `users` + `user_ide
 - `src/platform`: shared API/session boundaries
 - `worker/src`: OAuth, session, account linking, billing, notes, and D1 integration
 
-The `/app` route composes feature-owned surfaces. Billing and notes stay inside `src/features/*`, and page components do not own billing or notes domain logic.
+Feature modules are composed through the protected `/app` route. Billing and notes stay inside `src/features/*`, and page components do not own billing or notes domain logic.
 
 ## Internal Account Model
 

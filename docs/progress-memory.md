@@ -3,7 +3,7 @@
 ## Current status
 
 - Current stage: Stage 2 Toss one-time payment integration completed on top of the existing Stage 9 notes/account/auth baseline and the Stage 1 internal billing foundation.
-- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, signed sign-in vs link state handling, Worker-handled sign-out, internal `users` plus `user_identities`, internal-user-backed sessions, browser-local recent-login provider hinting, linked-provider lookup inside `/app`, merge foundations, personal notes with internal-user D1 ownership, and an internal-user-based Stage 2 Toss billing flow. Billing ownership is still internal-user-based only through `billing_customers.user_id`, not provider identity scoped, while Toss-facing `billing_customers.customer_key` is now a short deterministic internal-user-derived value safe for Toss limits. The billing domain includes `billing_customers`, `billing_payment_methods`, `subscription_plans`, `subscriptions`, `subscription_cycles`, `billing_events`, `entitlements`, and `manual_entitlement_overrides`, with real Toss HTTP access isolated behind `worker/src/billing/toss-client.ts`. Stage 2 webhook ingestion now derives delivery identity from Toss transmission headers, persists `billing_events` before reconciliation, dedupes by durable webhook event key, and marks accepted-but-unused deliveries as `ignored` instead of dropping them. Current `/app` scope is account/session surfaces, real Toss one-time billing testing, and the personal notes module. `pro_monthly` currently means a one-time 30-day paid access contract, not auto-renew.
+- Verified state: The app has a public `/` route, a protected `/app` route, a Worker boundary for `/auth/*` and `/api/*`, Google/Kakao/Naver OAuth start and callback flows, signed sign-in vs link state handling, Worker-handled sign-out, internal `users` plus `user_identities`, internal-user-backed sessions, browser-local recent-login provider hinting, linked-provider lookup in the protected app area, merge foundations, personal notes with internal-user D1 ownership, and an internal-user-based Stage 2 Toss billing flow. Billing ownership is still internal-user-based only through `billing_customers.user_id`, not provider identity scoped, while Toss-facing `billing_customers.customer_key` is now a short deterministic internal-user-derived value safe for Toss limits. The billing domain includes `billing_customers`, `billing_payment_methods`, `subscription_plans`, `subscriptions`, `subscription_cycles`, `billing_events`, `entitlements`, and `manual_entitlement_overrides`, with real Toss HTTP access isolated behind `worker/src/billing/toss-client.ts`. Stage 2 webhook ingestion now derives delivery identity from Toss transmission headers, persists `billing_events` before reconciliation, dedupes by durable webhook event key, and marks accepted-but-unused deliveries as `ignored` instead of dropping them. Current `/app` scope includes account/session UI, real Toss one-time billing testing, and the personal notes module. `pro_monthly` currently means a one-time 30-day paid access contract, not auto-renew.
 
 ## Completed work
 
@@ -77,9 +77,9 @@
 - What: Added `react-router-dom`, split the app into route-specific pages, and created a guarded `/app` route backed by an early auth boundary.
 - Why: This gives the project a production-oriented route boundary now, while keeping real authentication implementation for the next step.
 
-### 15. Phase 3 route-surface setup
+### 15. Phase 3 public and protected route surfaces
 
-- What: Introduced the initial public sign-in surface and `/app` route composition for the later Worker-backed auth flow.
+- What: Introduced the public and protected route surfaces that later anchored the Worker-backed auth flow.
 - Why: This established page-level route surfaces before real authentication and product features were added.
 
 ### 16. Phase 4 session boundary refactor
@@ -104,7 +104,7 @@
 
 ### 20. Phase 6 authenticated route experience
 
-- What: Added a Worker-handled sign-out route, surfaced the signed-in user name and provider inside `/app`, redirected authenticated home visits to `/app`, and centralized public auth error messaging.
+- What: Added a Worker-handled sign-out route, surfaced the signed-in user name and provider in the protected app area, redirected authenticated home visits to `/app`, and centralized public auth error messaging.
 - Why: This adds the first useful post-login experience without changing the existing Worker-based OAuth/session architecture.
 
 ### 21. Phase 7 and Phase 8 completion pass
@@ -134,7 +134,7 @@
 
 ### 26. Stage 1 Toss subscription foundation
 
-- What: Added a durable internal billing schema and Worker billing domain under `worker/src/billing`, including internal-user-owned billing customers, plan catalog, internal subscription contracts, recurring cycle records, idempotent billing event logging, entitlement recomputation, and minimal protected billing UI under `src/features/billing`.
+- What: Added a durable internal billing schema and Worker billing domain under `worker/src/billing`, including internal-user-owned billing customers, plan catalog, internal subscription contracts, recurring cycle records, idempotent billing event logging, entitlement recomputation, and the initial billing surface under `src/features/billing`.
 - Why: Stage 2 needs to attach real Toss billing-key setup, recurring charge approval, and webhook validation without redesigning billing ownership or feature-access structure, so the internal subscription and entitlement model must exist first.
 
 ### 27. Stage 2 Toss one-time payment integration
