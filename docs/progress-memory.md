@@ -12,10 +12,10 @@
 - What: Created the Git repository and prepared it as the base workspace for this web app.
 - Why: A clean repository is the starting point for version history, rollback, and continuous progress tracking.
 
-### 2. Base app scaffold
+### 2. Initial app setup
 
-- What: Created the initial React + TypeScript + Vite application scaffold and confirmed that the default sample screen renders in the browser.
-- Why: This establishes a real executable app foundation before any landing page, login flow, or protected route work begins.
+- What: Created the initial React + TypeScript + Vite application and confirmed that the default screen renders in the browser.
+- Why: This establishes a real executable app foundation before route, login, and Worker-boundary work begins.
 
 ### 3. Local development server
 
@@ -74,13 +74,13 @@
 
 ### 14. Step 2 route skeleton
 
-- What: Added `react-router-dom`, split the app into route-specific pages, and created a guarded `/app` route backed by a placeholder auth module.
+- What: Added `react-router-dom`, split the app into route-specific pages, and created a guarded `/app` route backed by an early auth boundary.
 - Why: This gives the project a production-oriented route boundary now, while keeping real authentication implementation for the next step.
 
-### 15. Phase 3 public and protected UI skeleton
+### 15. Phase 3 public and protected route UI
 
-- What: Turned `/` into a landing page with disabled social-login entry UI and turned `/app` into an app-shell placeholder structure.
-- Why: This established reusable page-level UI before real authentication and feature modules are added.
+- What: Introduced the first public sign-in entry and protected route UI structure for the later Worker-backed auth flow.
+- Why: This established page-level route surfaces before real authentication and product features were added.
 
 ### 16. Phase 4 session boundary refactor
 
@@ -110,12 +110,12 @@
 ### 21. Phase 7 and Phase 8 completion pass
 
 - What: Kept the Worker-based OAuth/session mechanics intact while moving protected-route composition into `app/router`, keeping auth-specific UI and auth-specific page interpretation inside `features/auth`, and reducing page-layer logic so `/` and `/app` act as composition entry points only.
-- Why: This locks the repository into a reusable authenticated web-app base before any Stage 9 product module work begins.
+- Why: This locked the auth/session structure into stable route and feature boundaries before Stage 9 product module work began.
 
 ### 22. Stage 9 personal notes feature
 
-- What: Added a D1-backed `notes` schema plus owner-scoped Worker CRUD endpoints under `/api/notes`, then implemented the first feature-closed product module under `src/features/notes` with a two-pane list/editor workspace, manual save, hard delete, empty/loading/error states, and tests for pure notes logic plus Worker API behavior.
-- Why: This turns the previously empty protected app base into the first reusable reference feature module without breaking the existing auth/session boundary or pushing notes logic into page components.
+- What: Added a D1-backed `notes` schema plus owner-scoped Worker CRUD endpoints under `/api/notes`, then implemented the first product module under `src/features/notes` with a two-pane list/editor workspace, manual save, hard delete, empty/loading/error states, and tests for pure notes logic plus Worker API behavior.
+- Why: This added the first protected product feature without breaking the existing auth/session boundary or pushing notes logic into page components.
 
 ### 23. Account linking and merge foundation
 
