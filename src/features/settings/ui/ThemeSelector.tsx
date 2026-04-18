@@ -128,60 +128,59 @@ export default function ThemeSelector({
     }
   }
 
-  return (
-    <div
+  const triggerButton = (
+    <button
+      ref={triggerRef}
+      aria-controls={isOpen ? listboxId : undefined}
+      aria-expanded={isOpen}
+      aria-haspopup="listbox"
+      aria-label={variant === "compact" ? "Theme" : undefined}
+      aria-labelledby={
+        variant === "default" ? `${labelId} ${buttonTextId}` : undefined
+      }
       className={[
-        "theme-selector",
-        variant === "compact" ? "theme-selector--compact" : "",
+        "theme-selector__trigger",
+        variant === "compact" ? "theme-selector__trigger--compact" : "",
       ]
         .filter(Boolean)
         .join(" ")}
-    >
-      <span
-        className={[
-          "theme-selector__label",
-          variant === "compact" ? "theme-selector__label--sr-only" : "",
-        ]
-          .filter(Boolean)
-          .join(" ")}
-        id={labelId}
-      >
-        Theme
-      </span>
-      <button
-        ref={triggerRef}
-        aria-controls={isOpen ? listboxId : undefined}
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
-        aria-labelledby={`${labelId} ${buttonTextId}`}
-        className="theme-selector__trigger"
-        onClick={() => {
-          if (isOpen) {
-            overlay.dismiss();
-            return;
-          }
+      onClick={() => {
+        if (isOpen) {
+          overlay.dismiss();
+          return;
+        }
 
-          openPopover();
-        }}
-        onKeyDown={handleTriggerKeyDown}
-        type="button"
-      >
-        {variant === "compact" ? (
-          <span aria-hidden="true" className="theme-selector__prefix">
+        openPopover();
+      }}
+      onKeyDown={handleTriggerKeyDown}
+      type="button"
+    >
+      <span className="theme-selector__value" id={buttonTextId}>
+        {activeTheme.label}
+      </span>
+      <span aria-hidden="true" className="theme-selector__chevron">
+        v
+      </span>
+    </button>
+  );
+
+  return (
+    <>
+      {variant === "compact" ? (
+        triggerButton
+      ) : (
+        <div className="theme-selector">
+          <span className="theme-selector__label" id={labelId}>
             Theme
           </span>
-        ) : null}
-        <span className="theme-selector__value" id={buttonTextId}>
-          {activeTheme.label}
-        </span>
-        <span aria-hidden="true" className="theme-selector__chevron">
-          v
-        </span>
-      </button>
+          {triggerButton}
+        </div>
+      )}
       {overlay.renderOverlay(
         <div
           aria-activedescendant={optionId(activeIndex)}
-          aria-labelledby={labelId}
+          aria-label={variant === "compact" ? "Theme" : undefined}
+          aria-labelledby={variant === "default" ? labelId : undefined}
           className="theme-selector__listbox"
           id={listboxId}
           onKeyDown={handleListboxKeyDown}
@@ -238,6 +237,6 @@ export default function ThemeSelector({
           className: "theme-selector__popover",
         },
       )}
-    </div>
+    </>
   );
 }

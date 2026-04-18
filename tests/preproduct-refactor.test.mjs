@@ -109,11 +109,19 @@ test("header controls use the compact theme selector variant and fixed shell siz
   );
   assert.equal(themeSelector.includes('variant = "default"'), true);
   assert.equal(
-    themeSelector.includes("theme-selector--compact"),
+    themeSelector.includes("theme-selector__trigger--compact"),
     true,
   );
+  assert.equal(
+    themeSelector.includes('aria-label={variant === "compact" ? "Theme" : undefined}'),
+    true,
+  );
+  assert.equal(themeSelector.includes("theme-selector__prefix"), false);
+  assert.equal(themeSelector.includes("theme-selector__label--sr-only"), false);
   assert.equal(layoutCss.includes("flex-wrap: nowrap;"), true);
-  assert.equal(layoutCss.includes(".theme-selector--compact"), true);
+  assert.equal(layoutCss.includes("align-items: center;"), true);
+  assert.equal(layoutCss.includes("flex-wrap: wrap;"), false);
+  assert.equal(layoutCss.includes(".theme-selector__trigger--compact"), true);
 });
 
 test("billing dead exports are removed after the shared summary query migration", () => {
