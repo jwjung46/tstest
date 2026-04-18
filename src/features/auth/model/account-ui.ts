@@ -24,7 +24,7 @@ export function getLinkedProviderCardViewModel(
       cta: {
         kind: "link" as const,
         label: `Link ${provider.label}`,
-        href: buildAccountLinkStartPath(provider.provider, "/app"),
+        href: buildAccountLinkStartPath(provider.provider, "/app/account"),
       },
     };
   }

@@ -5,11 +5,14 @@ Cloudflare Worker auth/session boundary for an application with internal `users`
 ## Current Scope
 
 - Public route: `/`
-- Protected route: `/app`
+- Protected routes: `/app`, `/app/account`, `/app/subscription`
 - Worker-owned routes: `/auth/*`, `/api/*`
 - Auth providers: Google, Kakao, Naver
 - Canonical account model: internal user + linked identities
-- Current `/app` scope: account/session surfaces, real Toss billing testing, and personal notes
+- Current protected shell:
+  - `/app`: header-only protected home with blank body
+  - `/app/account`: account/session summary plus linked-provider management
+  - `/app/subscription`: Toss billing and checkout state
 
 ## Architecture
 
@@ -18,7 +21,7 @@ Cloudflare Worker auth/session boundary for an application with internal `users`
 - `src/platform`: shared API/session boundaries
 - `worker/src`: OAuth, session, account linking, billing, notes, and D1 integration
 
-Feature modules are composed through the protected `/app` route. Billing and notes stay inside `src/features/*`, and page components do not own billing or notes domain logic.
+Feature modules are composed through the protected app shell. Billing and notes stay inside `src/features/*`, and page components do not own billing or notes domain logic.
 
 ## Internal Account Model
 
@@ -70,7 +73,7 @@ Authenticated billing endpoints derive the current internal user from the sessio
 1. Signed-in internal user chooses `pro_monthly` in the protected billing UI.
 2. `POST /api/billing/checkout/session` creates a pending `subscription_cycles` record with a unique `toss_order_id`.
 3. The frontend opens Toss Payments with the Worker-issued client key, amount, order id, and redirect URLs.
-4. Toss redirects back to `/app` on success or fail.
+4. Toss redirects back to `/app/subscription` on success or fail.
 5. On success, the frontend calls `POST /api/billing/checkout/confirm`.
 6. The Worker confirms with Toss using the secret key, validates `paymentKey`, `orderId`, and `amount`, then marks the cycle paid and the subscription active.
 7. Entitlements are recomputed from the internal subscription state.
@@ -120,6 +123,8 @@ The notes module currently includes:
 - manual save only
 - hard delete only
 - loading, empty, fetch-error, save-error, delete-error states
+
+The notes feature code still exists under `src/features/notes`, but it is not currently mounted in the default protected home UI.
 
 Not in scope yet:
 

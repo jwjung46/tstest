@@ -79,9 +79,9 @@ function getClientSecret(env: WorkerEnv, provider: OAuthProviderConfig) {
   return value;
 }
 
-function normalizeRedirectTarget(value: string | null) {
+function normalizeRedirectTarget(value: string | null, fallback = "/app") {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/app";
+    return fallback;
   }
 
   return value;
@@ -89,6 +89,16 @@ function normalizeRedirectTarget(value: string | null) {
 
 function normalizeOAuthIntent(value: string | null) {
   return value === "link" ? "link" : "sign_in";
+}
+
+function normalizeLinkRedirectTarget(redirectTo: string) {
+  const url = new URL(redirectTo, "https://app.example");
+
+  if (url.pathname === "/app") {
+    url.pathname = "/app/account";
+  }
+
+  return `${url.pathname}${url.search}${url.hash}`;
 }
 
 function buildProviderFailureLocation(
@@ -325,11 +335,18 @@ export async function handleOAuthStart(
   const state = createStateToken();
   const redirectTo = normalizeRedirectTarget(
     requestUrl.searchParams.get("redirectTo"),
+    intent === "link" ? "/app/account" : "/app",
   );
+  const resolvedRedirectTo =
+    intent === "link" ? normalizeLinkRedirectTarget(redirectTo) : redirectTo;
 
   if (intent === "link" && !currentSession) {
     return redirectWithCookies(
-      buildLinkFailureLocation(redirectTo, providerId, "link_session_required"),
+      buildLinkFailureLocation(
+        resolvedRedirectTo,
+        providerId,
+        "link_session_required",
+      ),
       [],
     );
   }
@@ -349,7 +366,7 @@ export async function handleOAuthStart(
   const stateCookie = await encodeSignedCookieValue(env.AUTH_COOKIE_SECRET, {
     intent,
     provider: providerId,
-    redirectTo,
+    redirectTo: resolvedRedirectTo,
     state,
     currentUserId: currentSession?.user.id ?? null,
   } satisfies OAuthStatePayload);

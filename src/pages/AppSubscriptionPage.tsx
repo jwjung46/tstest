@@ -1,5 +1,5 @@
-import { SubscriptionPageContent } from "../app/layout/ProtectedAppPageContent";
+import BillingOverviewPanel from "../features/billing/ui/BillingOverviewPanel.tsx";
 
 export default function AppSubscriptionPage() {
-  return <SubscriptionPageContent />;
+  return <BillingOverviewPanel />;
 }

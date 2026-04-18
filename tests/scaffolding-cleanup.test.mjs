@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const repoRoot = resolve(import.meta.dirname, "..");
@@ -25,9 +25,14 @@ test("/app route composition is split into protected layout and page entries", (
   const protectedAppLayout = readRepoFile(
     "src/app/layout/ProtectedAppLayout.tsx",
   );
+  const appShell = readRepoFile("src/app/layout/AppShell.tsx");
   const appHomePage = readRepoFile("src/pages/AppHomePage.tsx");
   const appAccountPage = readRepoFile("src/pages/AppAccountPage.tsx");
   const appSubscriptionPage = readRepoFile("src/pages/AppSubscriptionPage.tsx");
+  const protectedAppPageContentPath = resolve(
+    repoRoot,
+    "src/app/layout/ProtectedAppPageContent.tsx",
+  );
 
   assert.equal(router.includes("ProtectedAppLayout"), true);
   assert.equal(router.includes("APP_ROUTE_SEGMENTS.account"), true);
@@ -37,7 +42,11 @@ test("/app route composition is split into protected layout and page entries", (
   assert.equal(routePaths.includes('subscription: "/app/subscription"'), true);
   assert.equal(protectedAppLayout.includes("<AppShell"), true);
   assert.equal(protectedAppLayout.includes("<Outlet />"), true);
-  assert.equal(appHomePage.includes("ProtectedHomePageContent"), true);
-  assert.equal(appAccountPage.includes("AccountPageContent"), true);
-  assert.equal(appSubscriptionPage.includes("SubscriptionPageContent"), true);
+  assert.equal(appShell.includes("headerActions"), true);
+  assert.equal(appHomePage.includes("return null"), true);
+  assert.equal(appAccountPage.includes("AuthenticatedSessionPanel"), true);
+  assert.equal(appSubscriptionPage.includes("BillingOverviewPanel"), true);
+  assert.equal(existsSync(protectedAppPageContentPath), false);
+  assert.equal(appAccountPage.includes("../app/layout/"), false);
+  assert.equal(appSubscriptionPage.includes("../app/layout/"), false);
 });

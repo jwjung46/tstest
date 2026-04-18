@@ -554,8 +554,8 @@ async function applyFailedPayment(
 
 function buildCheckoutUrls(appOrigin: string) {
   return {
-    successUrl: `${appOrigin}/app?billingFlow=success`,
-    failUrl: `${appOrigin}/app?billingFlow=fail`,
+    successUrl: `${appOrigin}/app/subscription?billingFlow=success`,
+    failUrl: `${appOrigin}/app/subscription?billingFlow=fail`,
   };
 }
 

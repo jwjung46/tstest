@@ -166,8 +166,8 @@ test("buildOAuthStartPath preserves the protected redirect target", () => {
 
 test("buildAccountLinkStartPath encodes link intent separately from normal sign-in", () => {
   assert.equal(
-    buildAccountLinkStartPath("naver", "/app"),
-    "/auth/naver/start?redirectTo=%2Fapp&intent=link",
+    buildAccountLinkStartPath("naver", "/app/account"),
+    "/auth/naver/start?redirectTo=%2Fapp%2Faccount&intent=link",
   );
 });
 
@@ -325,6 +325,6 @@ test("linked provider card simplifies the unlinked provider state", () => {
   assert.deepEqual(card.cta, {
     kind: "link",
     label: "Link Naver",
-    href: "/auth/naver/start?redirectTo=%2Fapp&intent=link",
+    href: "/auth/naver/start?redirectTo=%2Fapp%2Faccount&intent=link",
   });
 });

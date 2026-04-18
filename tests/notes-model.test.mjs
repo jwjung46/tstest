@@ -422,3 +422,21 @@ test("parseBillingCheckoutReturn interprets success and fail redirect params for
     },
   );
 });
+
+test("billing checkout service returns subscription route redirects", () => {
+  const file = fs.readFileSync(
+    path.join(process.cwd(), "worker", "src", "billing", "service.ts"),
+    "utf8",
+  );
+
+  assert.match(
+    file,
+    /successUrl:\s*`\$\{appOrigin\}\/app\/subscription\?billingFlow=success`/,
+  );
+  assert.match(
+    file,
+    /failUrl:\s*`\$\{appOrigin\}\/app\/subscription\?billingFlow=fail`/,
+  );
+  assert.doesNotMatch(file, /`\$\{appOrigin\}\/app\?billingFlow=success`/);
+  assert.doesNotMatch(file, /`\$\{appOrigin\}\/app\?billingFlow=fail`/);
+});
