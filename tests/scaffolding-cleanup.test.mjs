@@ -57,20 +57,19 @@ test("protected shell keeps /app visually blank and renders the user menu in a p
   );
   const appShell = readRepoFile("src/app/layout/AppShell.tsx");
   const appUserMenu = readRepoFile("src/app/layout/AppUserMenu.tsx");
+  const themeSelector = readRepoFile("src/features/settings/ui/ThemeSelector.tsx");
+  const anchoredOverlay = readRepoFile("src/shared/ui/useAnchoredOverlay.tsx");
   const layoutCss = readRepoFile("src/shared/styles/layout.css");
 
   assert.equal(
-    protectedAppLayout.includes(
-      'const contentMode = location.pathname === APP_ROUTES.home ? "blank" : "default";',
-    ),
+    protectedAppLayout.includes("location.pathname === APP_ROUTES.home"),
     true,
   );
   assert.equal(appShell.includes("contentMode"), true);
   assert.equal(appShell.includes("app-shell__content--blank"), true);
-  assert.equal(appUserMenu.includes("createPortal"), true);
-  assert.equal(appUserMenu.includes("document.body"), true);
-  assert.equal(appUserMenu.includes("right: `${position.right}px`"), true);
-  assert.equal(appUserMenu.includes("top: `${position.top}px`"), true);
+  assert.equal(appUserMenu.includes("useAnchoredOverlay"), true);
+  assert.equal(themeSelector.includes("useAnchoredOverlay"), true);
+  assert.equal(anchoredOverlay.includes("createPortal"), true);
   assert.equal(layoutCss.includes(".app-user-menu__popover"), true);
   assert.equal(layoutCss.includes("position: fixed;"), true);
   assert.equal(layoutCss.includes(".app-shell__content--blank"), true);

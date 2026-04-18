@@ -273,7 +273,17 @@ export default function BillingOverviewPanel() {
             </div>
           </div>
           <ul className="billing-list">
-            {billing.cycles.length === 0 ? (
+            {billing.historyStatus === "loading" ? (
+              <li className="billing-list__item">
+                <strong>Loading cycle history</strong>
+                <span>Recent payment cycles are being fetched separately.</span>
+              </li>
+            ) : billing.historyError ? (
+              <li className="billing-list__item">
+                <strong>History unavailable</strong>
+                <span>{billing.historyError}</span>
+              </li>
+            ) : billing.cycles.length === 0 ? (
               <li className="billing-list__item">
                 <strong>No billing cycle yet</strong>
                 <span>
@@ -304,7 +314,19 @@ export default function BillingOverviewPanel() {
             </div>
           </div>
           <ul className="billing-list">
-            {billing.events.length === 0 ? (
+            {billing.historyStatus === "loading" ? (
+              <li className="billing-list__item">
+                <strong>Loading billing events</strong>
+                <span>
+                  Confirm and webhook logs will appear after history loads.
+                </span>
+              </li>
+            ) : billing.historyError ? (
+              <li className="billing-list__item">
+                <strong>Event log unavailable</strong>
+                <span>{billing.historyError}</span>
+              </li>
+            ) : billing.events.length === 0 ? (
               <li className="billing-list__item">
                 <strong>No event yet</strong>
                 <span>Confirm and webhook events will be stored here.</span>

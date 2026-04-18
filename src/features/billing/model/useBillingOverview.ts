@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { ApiError } from "../../../platform/api/client.ts";
 import { startTossPayment } from "../lib/toss-sdk.ts";
@@ -7,11 +8,13 @@ import {
   confirmBillingCheckout,
   createBillingCheckoutSession,
   fetchBillingCheckoutResult,
-  fetchBillingEntitlements,
-  fetchBillingHistory,
-  fetchBillingOverview,
-  fetchBillingSubscription,
 } from "../services/billing-api.ts";
+import { billingQueryKeys } from "./billing-query-keys.ts";
+import {
+  useBillingHistoryQuery,
+  useBillingSummaryQuery,
+  type BillingSummary,
+} from "./billing-queries.ts";
 import type {
   BillingCheckoutResult,
   BillingCheckoutSession,
@@ -36,167 +39,200 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-async function loadBillingState() {
-  const [overview, subscriptionResponse, entitlementsResponse, history] =
-    await Promise.all([
-      fetchBillingOverview(),
-      fetchBillingSubscription(),
-      fetchBillingEntitlements(),
-      fetchBillingHistory(),
-    ]);
+function buildCheckoutReturnKey(
+  checkoutReturn: ReturnType<typeof parseBillingCheckoutReturn>,
+) {
+  if (!checkoutReturn) {
+    return null;
+  }
+
+  if (checkoutReturn.flow === "success") {
+    return [
+      checkoutReturn.flow,
+      checkoutReturn.orderId,
+      checkoutReturn.paymentKey,
+      checkoutReturn.amount,
+    ].join(":");
+  }
+
+  return [
+    checkoutReturn.flow,
+    checkoutReturn.orderId,
+    checkoutReturn.code,
+    checkoutReturn.message,
+  ].join(":");
+}
+
+function applySummaryPatch(
+  currentSummary: BillingSummary | undefined,
+  patch: {
+    subscription: BillingSubscription | null;
+    entitlements: EntitlementSummary[];
+  },
+): BillingSummary | undefined {
+  if (!currentSummary) {
+    return currentSummary;
+  }
 
   return {
-    customer: overview.customer,
-    availablePlans: overview.availablePlans,
-    subscription: subscriptionResponse.subscription ?? overview.subscription,
-    entitlements: entitlementsResponse.entitlements,
-    cycles: history.cycles,
-    events: history.events,
+    ...currentSummary,
+    subscription: patch.subscription,
+    entitlements: patch.entitlements,
   };
 }
 
 export function useBillingOverview() {
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const checkoutReturn = useMemo(
     () => parseBillingCheckoutReturn(searchParams),
     [searchParams],
   );
-  const [status, setStatus] = useState<"loading" | "ready" | "error">(
-    "loading",
-  );
-  const [actionStatus, setActionStatus] = useState<
-    "idle" | "starting" | "confirming"
-  >("idle");
-  const [error, setError] = useState<string | null>(null);
-  const [customer, setCustomer] = useState<BillingCustomer | null>(null);
-  const [subscription, setSubscription] = useState<BillingSubscription | null>(
-    null,
-  );
-  const [entitlements, setEntitlements] = useState<EntitlementSummary[]>([]);
-  const [availablePlans, setAvailablePlans] = useState<BillingPlan[]>([]);
-  const [cycles, setCycles] = useState<BillingCycleSummary[]>([]);
-  const [events, setEvents] = useState<BillingEventSummary[]>([]);
+  const handledCheckoutKeyRef = useRef<string | null>(null);
+  const summaryQuery = useBillingSummaryQuery();
+  const historyQuery = useBillingHistoryQuery({
+    enabled: summaryQuery.status === "success",
+  });
   const [checkoutSession, setCheckoutSession] =
     useState<BillingCheckoutSession | null>(null);
   const [checkoutResult, setCheckoutResult] =
     useState<BillingCheckoutResult | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const startCheckoutMutation = useMutation({
+    mutationFn: createBillingCheckoutSession,
+  });
+  const confirmCheckoutMutation = useMutation({
+    mutationFn: confirmBillingCheckout,
+  });
+  const fetchCheckoutResultMutation = useMutation({
+    mutationFn: fetchBillingCheckoutResult,
+  });
 
   useEffect(() => {
-    let isActive = true;
+    const checkoutReturnKey = buildCheckoutReturnKey(checkoutReturn);
+    const activeCheckoutReturn = checkoutReturn;
 
-    async function load() {
-      setStatus("loading");
-      setError(null);
-
-      try {
-        const initialState = await loadBillingState();
-
-        if (!isActive) {
-          return;
-        }
-
-        setCustomer(initialState.customer);
-        setSubscription(initialState.subscription);
-        setEntitlements(initialState.entitlements);
-        setAvailablePlans(initialState.availablePlans);
-        setCycles(initialState.cycles);
-        setEvents(initialState.events);
-
-        if (checkoutReturn?.flow === "success") {
-          setActionStatus("confirming");
-
-          const confirmResponse = await confirmBillingCheckout({
-            paymentKey: checkoutReturn.paymentKey,
-            orderId: checkoutReturn.orderId,
-            amount: checkoutReturn.amount,
-          });
-          const refreshedState = await loadBillingState();
-
-          if (!isActive) {
-            return;
-          }
-
-          setSubscription(confirmResponse.subscription);
-          setEntitlements(confirmResponse.entitlements);
-          setCustomer(refreshedState.customer);
-          setAvailablePlans(refreshedState.availablePlans);
-          setCycles(refreshedState.cycles);
-          setEvents(refreshedState.events);
-          setCheckoutResult(confirmResponse.result);
-          setActionStatus("idle");
-        } else if (checkoutReturn?.flow === "fail") {
-          setActionStatus("confirming");
-
-          const resultResponse = await fetchBillingCheckoutResult({
-            flow: "fail",
-            orderId: checkoutReturn.orderId,
-            code: checkoutReturn.code,
-            message: checkoutReturn.message,
-          });
-          const refreshedState = await loadBillingState();
-
-          if (!isActive) {
-            return;
-          }
-
-          setCustomer(refreshedState.customer);
-          setSubscription(
-            resultResponse.subscription ?? refreshedState.subscription,
-          );
-          setEntitlements(resultResponse.entitlements);
-          setAvailablePlans(refreshedState.availablePlans);
-          setCycles(refreshedState.cycles);
-          setEvents(refreshedState.events);
-          setCheckoutResult(resultResponse.result);
-          setActionStatus("idle");
-        } else {
-          setCheckoutResult(null);
-          setActionStatus("idle");
-        }
-
-        setStatus("ready");
-      } catch (loadError) {
-        if (!isActive) {
-          return;
-        }
-
-        setError(
-          getErrorMessage(
-            loadError,
-            "Billing details could not be loaded right now.",
-          ),
-        );
-        setStatus("error");
-        setActionStatus("idle");
-      }
+    if (!checkoutReturnKey || !activeCheckoutReturn) {
+      handledCheckoutKeyRef.current = null;
+      return;
     }
 
-    void load();
+    if (handledCheckoutKeyRef.current === checkoutReturnKey) {
+      return;
+    }
 
-    return () => {
-      isActive = false;
-    };
-  }, [checkoutReturn]);
+    handledCheckoutKeyRef.current = checkoutReturnKey;
+    setActionError(null);
+
+    void (async () => {
+      try {
+        if (activeCheckoutReturn.flow === "success") {
+          const confirmResponse = await confirmCheckoutMutation.mutateAsync({
+            paymentKey: activeCheckoutReturn.paymentKey,
+            orderId: activeCheckoutReturn.orderId,
+            amount: activeCheckoutReturn.amount,
+          });
+
+          setCheckoutResult(confirmResponse.result);
+          queryClient.setQueryData<BillingSummary | undefined>(
+            billingQueryKeys.summary,
+            (currentSummary) =>
+              applySummaryPatch(currentSummary, {
+                subscription: confirmResponse.subscription,
+                entitlements: confirmResponse.entitlements,
+              }),
+          );
+        } else {
+          const resultResponse = await fetchCheckoutResultMutation.mutateAsync({
+            flow: "fail",
+            orderId: activeCheckoutReturn.orderId,
+            code: activeCheckoutReturn.code,
+            message: activeCheckoutReturn.message,
+          });
+
+          setCheckoutResult(resultResponse.result);
+          queryClient.setQueryData<BillingSummary | undefined>(
+            billingQueryKeys.summary,
+            (currentSummary) =>
+              applySummaryPatch(currentSummary, {
+                subscription:
+                  resultResponse.subscription ??
+                  currentSummary?.subscription ??
+                  null,
+                entitlements: resultResponse.entitlements,
+              }),
+          );
+        }
+
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: billingQueryKeys.summary,
+          }),
+          queryClient.invalidateQueries({
+            queryKey: billingQueryKeys.history,
+          }),
+        ]);
+      } catch (checkoutError) {
+        setActionError(
+          getErrorMessage(
+            checkoutError,
+            "Billing checkout state could not be synchronized.",
+          ),
+        );
+      }
+    })();
+  }, [
+    checkoutReturn,
+    confirmCheckoutMutation,
+    fetchCheckoutResultMutation,
+    queryClient,
+  ]);
 
   async function startCheckout(planCode: string) {
-    setActionStatus("starting");
-    setError(null);
+    setActionError(null);
 
     try {
       const sessionResponse: BillingCheckoutSessionResponse =
-        await createBillingCheckoutSession(planCode);
+        await startCheckoutMutation.mutateAsync(planCode);
       setCheckoutSession(sessionResponse.checkout);
       await startTossPayment(sessionResponse.checkout);
     } catch (checkoutError) {
-      setError(
+      setActionError(
         getErrorMessage(
           checkoutError,
           "Toss payment could not be started right now.",
         ),
       );
-      setActionStatus("idle");
     }
   }
+
+  const status = summaryQuery.isPending
+    ? "loading"
+    : summaryQuery.isError
+      ? "error"
+      : "ready";
+  const actionStatus = startCheckoutMutation.isPending
+    ? "starting"
+    : confirmCheckoutMutation.isPending || fetchCheckoutResultMutation.isPending
+      ? "confirming"
+      : "idle";
+  const error =
+    actionError ??
+    (summaryQuery.isError
+      ? getErrorMessage(
+          summaryQuery.error,
+          "Billing details could not be loaded right now.",
+        )
+      : null);
+  const customer: BillingCustomer | null = summaryQuery.data?.customer ?? null;
+  const subscription: BillingSubscription | null =
+    summaryQuery.data?.subscription ?? null;
+  const entitlements: EntitlementSummary[] =
+    summaryQuery.data?.entitlements ?? [];
+  const availablePlans: BillingPlan[] = summaryQuery.data?.availablePlans ?? [];
+  const cycles: BillingCycleSummary[] = historyQuery.data?.cycles ?? [];
+  const events: BillingEventSummary[] = historyQuery.data?.events ?? [];
 
   return {
     status,
@@ -208,8 +244,16 @@ export function useBillingOverview() {
     availablePlans,
     cycles,
     events,
+    historyStatus:
+      historyQuery.isPending || historyQuery.isFetching ? "loading" : "ready",
+    historyError: historyQuery.isError
+      ? getErrorMessage(
+          historyQuery.error,
+          "Billing history could not be loaded right now.",
+        )
+      : null,
     checkoutSession,
-    checkoutResult,
+    checkoutResult: checkoutReturn ? checkoutResult : null,
     startCheckout,
   };
 }

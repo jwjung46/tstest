@@ -30,7 +30,6 @@
 }
 
 .empty-state,
-.app-shell__header,
 .app-shell__content {
   border: 1px solid var(--theme-border-default);
   border-radius: var(--radius-xl);
@@ -67,13 +66,19 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--space-6);
-  padding: var(--space-7);
+  padding: 18px 22px;
   align-items: center;
+  border: 1px solid var(--theme-border-subtle);
+  border-radius: 999px;
+  background: var(--theme-surface-panel-soft);
+  backdrop-filter: blur(12px);
+  box-shadow: none;
 }
 
 .app-shell__brand {
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .app-shell__header-actions {
@@ -308,6 +313,10 @@
   .app-shell__content,
   .empty-state {
     padding: 24px 20px;
+  }
+
+  .app-shell__header {
+    padding: 16px 18px;
   }
 
   .app-shell__header-controls {
