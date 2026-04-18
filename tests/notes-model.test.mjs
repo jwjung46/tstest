@@ -440,3 +440,22 @@ test("billing checkout service returns subscription route redirects", () => {
   assert.doesNotMatch(file, /`\$\{appOrigin\}\/app\?billingFlow=success`/);
   assert.doesNotMatch(file, /`\$\{appOrigin\}\/app\?billingFlow=fail`/);
 });
+
+test("billing frontend types accept the ignored webhook processing status", () => {
+  const file = fs.readFileSync(
+    path.join(
+      process.cwd(),
+      "src",
+      "features",
+      "billing",
+      "types",
+      "billing.ts",
+    ),
+    "utf8",
+  );
+
+  assert.match(
+    file,
+    /processingStatus:\s*"pending"\s*\|\s*"processed"\s*\|\s*"failed"\s*\|\s*"ignored"/,
+  );
+});

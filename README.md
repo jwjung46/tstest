@@ -13,6 +13,7 @@ Cloudflare Worker auth/session boundary for an application with internal `users`
   - `/app`: header-only protected home with blank body
   - `/app/account`: account/session summary plus linked-provider management
   - `/app/subscription`: Toss billing and checkout state
+  - shared header overlays use body-level fixed portal popovers to avoid stacking conflicts with the shell panels
 
 ## Architecture
 

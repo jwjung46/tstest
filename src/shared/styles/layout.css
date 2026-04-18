@@ -137,10 +137,8 @@
 }
 
 .app-user-menu__popover {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  z-index: 20;
+  position: fixed;
+  z-index: 40;
   width: min(240px, calc(100vw - 32px));
 }
 
@@ -182,6 +180,15 @@
   display: grid;
   gap: var(--space-6);
   min-height: calc(100vh - 170px);
+}
+
+.app-shell__content--blank {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 .empty-state {

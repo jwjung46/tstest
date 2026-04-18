@@ -152,6 +152,11 @@
 - What: Removed page-specific placeholder content from `app/layout`, kept `pages` as route-entry composition only, added a shared protected header with theme selection and a user dropdown, moved the existing account UI to `/app/account`, moved the existing billing UI to `/app/subscription`, left `/app` intentionally blank below the header, and updated account-linking plus Toss checkout return paths to match the new route structure.
 - Why: The protected shell now matches the repo architecture rulebook instead of mixing route-local placeholders into layout, and the account/billing surfaces can evolve independently without turning `/app` into a composite dashboard again.
 
+### 30. Protected shell overlay hardening and billing type alignment
+
+- What: Moved the protected user menu popover to a body-level fixed portal so it no longer sits underneath shell cards, finalized `/app` with a true blank-content shell variant while keeping `/app/account` and `/app/subscription` unchanged, and aligned the frontend billing event type with the Worker's accepted `ignored` processing status.
+- Why: This closes the remaining protected-shell UI regressions without widening scope, keeps the shell/layout boundary clean, and removes a frontend-vs-Worker billing contract mismatch.
+
 ## Decisions fixed so far
 
 - Language: TypeScript.

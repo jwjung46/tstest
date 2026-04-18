@@ -50,3 +50,28 @@ test("/app route composition is split into protected layout and page entries", (
   assert.equal(appAccountPage.includes("../app/layout/"), false);
   assert.equal(appSubscriptionPage.includes("../app/layout/"), false);
 });
+
+test("protected shell keeps /app visually blank and renders the user menu in a portal overlay", () => {
+  const protectedAppLayout = readRepoFile(
+    "src/app/layout/ProtectedAppLayout.tsx",
+  );
+  const appShell = readRepoFile("src/app/layout/AppShell.tsx");
+  const appUserMenu = readRepoFile("src/app/layout/AppUserMenu.tsx");
+  const layoutCss = readRepoFile("src/shared/styles/layout.css");
+
+  assert.equal(
+    protectedAppLayout.includes(
+      'const contentMode = location.pathname === APP_ROUTES.home ? "blank" : "default";',
+    ),
+    true,
+  );
+  assert.equal(appShell.includes("contentMode"), true);
+  assert.equal(appShell.includes("app-shell__content--blank"), true);
+  assert.equal(appUserMenu.includes("createPortal"), true);
+  assert.equal(appUserMenu.includes("document.body"), true);
+  assert.equal(appUserMenu.includes("right: `${position.right}px`"), true);
+  assert.equal(appUserMenu.includes("top: `${position.top}px`"), true);
+  assert.equal(layoutCss.includes(".app-user-menu__popover"), true);
+  assert.equal(layoutCss.includes("position: fixed;"), true);
+  assert.equal(layoutCss.includes(".app-shell__content--blank"), true);
+});

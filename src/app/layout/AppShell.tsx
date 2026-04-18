@@ -4,12 +4,14 @@ type AppShellProps = {
   brand: string;
   headerActions?: ReactNode;
   children: ReactNode;
+  contentMode?: "default" | "blank";
 };
 
 export default function AppShell({
   brand,
   headerActions,
   children,
+  contentMode = "default",
 }: AppShellProps) {
   return (
     <div className="app-shell">
@@ -21,7 +23,16 @@ export default function AppShell({
         ) : null}
       </header>
 
-      <main className="app-shell__content">{children}</main>
+      <main
+        className={[
+          "app-shell__content",
+          contentMode === "blank" ? "app-shell__content--blank" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
+        {children}
+      </main>
     </div>
   );
 }

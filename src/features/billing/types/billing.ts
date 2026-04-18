@@ -85,7 +85,7 @@ export type BillingEventSummary = {
   relatedSubscriptionId: string | null;
   relatedCycleId: string | null;
   payload: Record<string, unknown> | null;
-  processingStatus: "pending" | "processed" | "failed";
+  processingStatus: "pending" | "processed" | "failed" | "ignored";
   processingAttempts: number;
   lastErrorMessage: string | null;
   receivedAt: string;
