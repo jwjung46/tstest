@@ -1,8 +1,13 @@
-import type { ThemeId } from "../../shared/styles/theme-contract.ts";
+import type { ThemeId } from "../../shared/styles/theme-registry.ts";
 
 export const themeStorageKey = "teamspace.theme";
 
-function getLocalStorage() {
+type ThemeStorageLike = {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+};
+
+function getLocalStorage(): ThemeStorageLike | null {
   if (typeof window === "undefined") {
     return null;
   }
@@ -14,9 +19,9 @@ function getLocalStorage() {
   }
 }
 
-export function readStoredThemeId() {
-  const storage = getLocalStorage();
-
+export function readStoredThemeId(
+  storage: ThemeStorageLike | null = getLocalStorage(),
+) {
   if (!storage) {
     return null;
   }
@@ -28,9 +33,10 @@ export function readStoredThemeId() {
   }
 }
 
-export function writeStoredThemeId(themeId: ThemeId) {
-  const storage = getLocalStorage();
-
+export function writeStoredThemeId(
+  themeId: ThemeId,
+  storage: ThemeStorageLike | null = getLocalStorage(),
+) {
   if (!storage) {
     return;
   }

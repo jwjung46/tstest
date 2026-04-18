@@ -1,14 +1,8 @@
-import {
-  defineTheme,
-  type ThemeDefinition,
-  type ThemeId,
-} from "./theme-contract.ts";
+import { defineTheme, type ThemeDefinition } from "./theme-contract.ts";
 import { assertValidThemeRegistry } from "./theme-validator.ts";
 
-export const defaultThemeId = "default";
-
-const themeRegistry = [
-  defineTheme({
+const themeDefinitionMap = {
+  default: defineTheme({
     id: "default",
     label: "Default",
     colorScheme: "light",
@@ -53,7 +47,7 @@ const themeRegistry = [
       "shadow-elevated": "0 30px 80px rgba(19, 34, 56, 0.18)",
     },
   }),
-  defineTheme({
+  ocean: defineTheme({
     id: "ocean",
     label: "Ocean",
     colorScheme: "light",
@@ -98,7 +92,7 @@ const themeRegistry = [
       "shadow-elevated": "0 32px 80px rgba(16, 37, 60, 0.2)",
     },
   }),
-  defineTheme({
+  graphite: defineTheme({
     id: "graphite",
     label: "Graphite",
     colorScheme: "dark",
@@ -143,7 +137,25 @@ const themeRegistry = [
       "shadow-elevated": "0 34px 90px rgba(0, 0, 0, 0.46)",
     },
   }),
-] as const satisfies readonly ThemeDefinition[];
+} as const satisfies Record<string, ThemeDefinition<string>>;
+
+export type ThemeId = keyof typeof themeDefinitionMap;
+
+export const defaultThemeId: ThemeId = "default";
+
+const themeRegistry = [
+  themeDefinitionMap.default,
+  themeDefinitionMap.ocean,
+  themeDefinitionMap.graphite,
+] as const satisfies readonly ThemeDefinition<ThemeId>[];
+
+const registeredThemeIds = new Set<ThemeId>(
+  Object.keys(themeDefinitionMap) as ThemeId[],
+);
+
+function isThemeId(value: string): value is ThemeId {
+  return registeredThemeIds.has(value as ThemeId);
+}
 
 if (import.meta.env?.DEV) {
   assertValidThemeRegistry(themeRegistry);
@@ -153,20 +165,12 @@ export function getThemeRegistry() {
   return themeRegistry;
 }
 
-export function getThemeDefinition(themeId: string) {
-  const resolvedThemeId = resolveThemeId(themeId);
-
-  return (
-    themeRegistry.find((theme) => theme.id === resolvedThemeId) ??
-    themeRegistry[0]
-  );
+export function getThemeDefinition(themeId: ThemeId) {
+  return themeDefinitionMap[themeId];
 }
 
 export function resolveThemeId(value: unknown): ThemeId {
-  if (
-    typeof value === "string" &&
-    themeRegistry.some((theme) => theme.id === value)
-  ) {
+  if (typeof value === "string" && isThemeId(value)) {
     return value;
   }
 

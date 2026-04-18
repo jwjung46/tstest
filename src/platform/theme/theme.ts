@@ -2,89 +2,39 @@ import {
   getThemeDefinition,
   getThemeRegistry,
   resolveThemeId,
+  type ThemeId,
 } from "../../shared/styles/theme-registry.ts";
-import type {
-  ThemeDefinition,
-  ThemeId,
-} from "../../shared/styles/theme-contract.ts";
 import { applyThemeToDocument } from "./dom.ts";
+import { createThemeStore } from "./create-theme-store.ts";
 import { readStoredThemeId, writeStoredThemeId } from "./storage.ts";
 
-export type ThemeSnapshot = {
-  themeId: ThemeId;
-  theme: ThemeDefinition;
-  availableThemes: readonly ThemeDefinition[];
-};
+export type { ThemeSnapshot } from "./create-theme-store.ts";
 
-const availableThemes = getThemeRegistry();
-const listeners = new Set<() => void>();
-
-let hasInitializedThemeSnapshot = false;
-let currentSnapshot: ThemeSnapshot = createThemeSnapshot(
-  resolveThemeId(readStoredThemeId()),
-);
-
-function createThemeSnapshot(themeId: ThemeId): ThemeSnapshot {
-  const theme = getThemeDefinition(themeId);
-
-  return {
-    themeId: theme.id,
-    theme,
-    availableThemes,
-  };
-}
-
-function emitThemeSnapshotChange() {
-  for (const listener of listeners) {
-    listener();
-  }
-}
-
-function updateThemeSnapshot(themeId: ThemeId) {
-  const nextSnapshot = createThemeSnapshot(themeId);
-  const hasChanged = currentSnapshot.themeId !== nextSnapshot.themeId;
-
-  currentSnapshot = nextSnapshot;
-  applyThemeToDocument(nextSnapshot.theme);
-  writeStoredThemeId(nextSnapshot.themeId);
-
-  if (hasChanged) {
-    emitThemeSnapshotChange();
-  }
-
-  return currentSnapshot;
-}
+const themeStore = createThemeStore({
+  availableThemes: getThemeRegistry(),
+  getThemeDefinition,
+  resolveThemeId,
+  readStoredThemeId,
+  writeStoredThemeId,
+  applyTheme: applyThemeToDocument,
+});
 
 export function initializeThemeSnapshot() {
-  if (hasInitializedThemeSnapshot) {
-    return currentSnapshot;
-  }
-
-  hasInitializedThemeSnapshot = true;
-
-  return updateThemeSnapshot(resolveThemeId(readStoredThemeId()));
+  return themeStore.initializeThemeSnapshot();
 }
 
 export function getThemeSnapshot() {
-  return currentSnapshot;
+  return themeStore.getThemeSnapshot();
 }
 
 export function subscribeToThemeSnapshot(listener: () => void) {
-  listeners.add(listener);
-
-  return () => {
-    listeners.delete(listener);
-  };
+  return themeStore.subscribeToThemeSnapshot(listener);
 }
 
-export function setTheme(themeId: string) {
-  if (!hasInitializedThemeSnapshot) {
-    initializeThemeSnapshot();
-  }
-
-  return updateThemeSnapshot(resolveThemeId(themeId));
+export function setTheme(themeId: ThemeId) {
+  return themeStore.setTheme(themeId);
 }
 
 export function getAvailableThemes() {
-  return availableThemes;
+  return themeStore.getAvailableThemes();
 }

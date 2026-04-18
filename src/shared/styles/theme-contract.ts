@@ -43,17 +43,17 @@ export type ThemeTokenKey = (typeof themeTokenKeys)[number];
 
 export type ThemeTokens = Record<ThemeTokenKey, string>;
 
-export type ThemeId = string;
-
 export type ThemeColorScheme = "light" | "dark";
 
-export type ThemeDefinition = {
-  id: ThemeId;
+export type ThemeDefinition<Id extends string = string> = {
+  id: Id;
   label: string;
   colorScheme: ThemeColorScheme;
   tokens: ThemeTokens;
 };
 
-export function defineTheme(definition: ThemeDefinition): ThemeDefinition {
+export function defineTheme<const Id extends string>(
+  definition: ThemeDefinition<Id>,
+): ThemeDefinition<Id> {
   return definition;
 }

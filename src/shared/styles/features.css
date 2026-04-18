@@ -1,0 +1,483 @@
+.landing-login-card {
+  display: grid;
+  gap: var(--space-6);
+  align-content: start;
+  padding: var(--space-7);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--theme-border-subtle);
+  background: var(--theme-surface-panel-soft);
+  box-shadow: var(--theme-shadow-panel);
+}
+
+.landing-login-card__header,
+.authenticated-user-summary,
+.linked-login-methods,
+.linked-login-methods__header,
+.billing-panel,
+.billing-panel__header,
+.billing-plan-grid,
+.notes-workspace,
+.billing-grid {
+  display: grid;
+}
+
+.landing-login-card__header,
+.linked-login-methods__header,
+.billing-panel__header {
+  gap: var(--space-3);
+}
+
+.auth-button-group {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.auth-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 58px;
+  padding: 0 var(--space-5);
+  border: 1px solid var(--auth-provider-border, var(--theme-border-default));
+  border-radius: 18px;
+  background: var(--auth-provider-background, var(--theme-surface-interactive));
+  color: var(--auth-provider-foreground, var(--theme-text-primary));
+  text-align: left;
+  text-decoration: none;
+  box-shadow: var(--theme-shadow-panel);
+}
+
+.auth-button:hover {
+  transform: translateY(-1px);
+}
+
+.auth-button__provider {
+  font-weight: 700;
+}
+
+.auth-button__label {
+  color: var(--auth-provider-muted-foreground, var(--theme-text-secondary));
+  font-size: 0.94rem;
+}
+
+.authenticated-user-summary {
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--theme-border-subtle);
+  background: var(--theme-surface-panel-soft);
+  box-shadow: var(--theme-shadow-panel);
+}
+
+.authenticated-user-summary__top,
+.notes-pane__header,
+.billing-card__header,
+.billing-plan-card__footer {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.authenticated-user-summary__name {
+  display: block;
+  margin-top: 8px;
+  color: var(--theme-text-primary);
+  font-size: 1.15rem;
+}
+
+.authenticated-user-summary__email,
+.notes-list__item-top span,
+.notes-list__item p,
+.notes-field__label,
+.billing-list__item span,
+.linked-provider-card__status,
+.linked-provider-card__helper,
+.linked-provider-card__meta-row dt,
+.billing-meta__row dt,
+.billing-plan-card__copy span,
+.linked-provider-card__badge {
+  color: var(--theme-text-secondary);
+}
+
+.authenticated-user-summary__email {
+  margin-top: 4px;
+}
+
+.authenticated-user-summary__badge,
+.billing-badge,
+.linked-provider-card__badge--linked {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--theme-accent-soft);
+  color: var(--theme-accent-text);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.authenticated-user-summary__meta {
+  display: grid;
+  gap: 6px;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--theme-border-subtle);
+}
+
+.authenticated-user-summary__label {
+  color: var(--theme-text-muted);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sign-out-button,
+.notes-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--theme-border-default);
+  border-radius: 999px;
+  background: var(--theme-surface-interactive);
+  color: var(--theme-text-primary);
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: var(--theme-shadow-panel);
+}
+
+.sign-out-button:hover,
+.notes-button:hover {
+  border-color: var(--theme-border-strong);
+  background: var(--theme-surface-field-strong);
+}
+
+.notes-workspace {
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: var(--space-6);
+  min-height: 620px;
+}
+
+.notes-pane,
+.linked-login-methods,
+.billing-panel {
+  padding: var(--space-7);
+}
+
+.notes-pane {
+  display: grid;
+  gap: var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--theme-border-subtle);
+  background: var(--theme-surface-panel-soft);
+  box-shadow: var(--theme-shadow-panel);
+}
+
+.notes-pane__title,
+.linked-login-methods__title,
+.billing-panel__title {
+  margin-top: 8px;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+}
+
+.notes-list,
+.notes-status-stack,
+.billing-list,
+.billing-meta,
+.linked-provider-card__meta,
+.linked-provider-card__top,
+.linked-provider-card__body,
+.billing-plan-card__copy {
+  display: grid;
+}
+
+.notes-list {
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.notes-list__item {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  padding: var(--space-5);
+  border: 1px solid var(--theme-border-subtle);
+  border-radius: 18px;
+  background: var(--theme-surface-card);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notes-list__item:hover {
+  border-color: var(--theme-border-default);
+  box-shadow: var(--theme-shadow-panel);
+}
+
+.notes-list__item--selected {
+  border-color: var(--theme-selection-border);
+  background: var(--theme-selection-surface);
+  box-shadow: inset 0 0 0 1px var(--theme-border-accent);
+}
+
+.notes-list__item-top {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.notes-list__item p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.notes-button:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
+.notes-button--primary {
+  border-color: transparent;
+  background: var(--theme-accent-solid);
+  color: var(--theme-accent-on-solid);
+}
+
+.notes-button--primary:hover {
+  background: var(--theme-accent-strong);
+  color: var(--theme-accent-on-solid);
+}
+
+.notes-button--danger {
+  border-color: var(--theme-status-danger-border);
+  background: var(--theme-status-danger-surface);
+  color: var(--theme-status-danger-text);
+}
+
+.notes-button--danger:hover {
+  border-color: var(--theme-status-danger-border);
+  background: var(--theme-status-danger-surface);
+}
+
+.notes-editor {
+  align-content: start;
+}
+
+.notes-editor__actions,
+.linked-provider-card__badges,
+.linked-provider-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.notes-field {
+  display: grid;
+  gap: 10px;
+}
+
+.notes-field--editor {
+  min-height: 320px;
+}
+
+.notes-field__label,
+.billing-meta__row dt,
+.linked-provider-card__meta-row dt {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.notes-field__control {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--theme-border-default);
+  border-radius: 18px;
+  background: var(--theme-surface-field);
+  color: var(--theme-text-primary);
+  box-shadow: var(--theme-shadow-panel);
+}
+
+.notes-field__control::placeholder {
+  color: var(--theme-text-muted);
+}
+
+.notes-field__control:hover {
+  border-color: var(--theme-border-strong);
+}
+
+.notes-field__control--textarea {
+  min-height: 320px;
+  resize: vertical;
+}
+
+.notes-status-stack,
+.billing-list,
+.billing-plan-grid,
+.linked-provider-card__meta,
+.linked-provider-card__top,
+.linked-provider-card__body {
+  gap: var(--space-4);
+}
+
+.notes-feedback,
+.billing-feedback {
+  display: grid;
+  gap: var(--space-3);
+  padding: 14px 16px;
+  border: 1px solid var(--theme-status-info-border);
+  border-radius: 18px;
+  background: var(--theme-status-info-surface);
+  color: var(--theme-status-info-text);
+}
+
+.notes-feedback--error,
+.billing-feedback--error {
+  border-color: var(--theme-status-danger-border);
+  background: var(--theme-status-danger-surface);
+  color: var(--theme-status-danger-text);
+}
+
+.billing-feedback--success {
+  border-color: var(--theme-status-success-border);
+  background: var(--theme-status-success-surface);
+  color: var(--theme-status-success-text);
+}
+
+.billing-feedback--neutral {
+  border-color: var(--theme-status-info-border);
+  background: var(--theme-status-info-surface);
+  color: var(--theme-status-info-text);
+}
+
+.linked-login-methods {
+  gap: var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--theme-border-subtle);
+  background: var(--theme-surface-panel-soft);
+  box-shadow: var(--theme-shadow-panel);
+}
+
+.linked-login-methods__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.billing-panel {
+  gap: var(--space-6);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--theme-border-subtle);
+  background: var(--theme-surface-panel-soft);
+  box-shadow: var(--theme-shadow-panel);
+}
+
+.billing-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+
+.billing-card,
+.linked-provider-card {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--theme-border-subtle);
+  background: var(--theme-surface-card);
+  box-shadow: var(--theme-shadow-panel);
+}
+
+.billing-card--placeholder {
+  align-content: start;
+}
+
+.billing-meta,
+.linked-provider-card__meta {
+  margin: 0;
+}
+
+.billing-meta__row,
+.linked-provider-card__meta-row {
+  display: grid;
+  gap: 4px;
+}
+
+.billing-meta__row dd,
+.linked-provider-card__meta-row dd {
+  margin: 0;
+  color: var(--theme-text-primary);
+}
+
+.billing-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.billing-list__item,
+.billing-plan-card {
+  display: grid;
+  gap: var(--space-3);
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--theme-border-subtle);
+  background: var(--theme-surface-card-soft);
+}
+
+.billing-plan-card__footer {
+  align-items: center;
+}
+
+.linked-provider-card {
+  grid-template-rows: auto 1fr auto;
+  min-height: 240px;
+}
+
+.linked-provider-card__headline {
+  display: grid;
+  gap: 6px;
+}
+
+.linked-provider-card__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--theme-status-info-surface);
+  border: 1px solid var(--theme-status-info-border);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.linked-provider-card__actions {
+  align-items: end;
+}
+
+@media (max-width: 640px) {
+  .notes-pane,
+  .linked-login-methods,
+  .billing-panel {
+    padding: 24px 20px;
+  }
+
+  .sign-out-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 960px) {
+  .billing-grid,
+  .linked-login-methods__grid,
+  .notes-workspace {
+    grid-template-columns: 1fr;
+  }
+}
