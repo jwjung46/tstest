@@ -1,42 +1,16 @@
-import type { ReactNode } from "react";
+import type * as React from "react";
 
 type AppShellProps = {
-  brand: string;
-  headerActions?: ReactNode;
-  children: ReactNode;
-  contentMode?: "default" | "blank";
+  header?: React.ReactNode;
+  children: React.ReactNode;
 };
 
-export default function AppShell({
-  brand,
-  headerActions,
-  children,
-  contentMode = "default",
-}: AppShellProps) {
+export default function AppShell({ header, children }: AppShellProps) {
   return (
     <div className="app-shell">
-      <header className="app-shell__header">
-        <strong className="app-shell__brand">{brand}</strong>
+      {header && <header className="app-shell__header">{header}</header>}
 
-        {headerActions ? (
-          <div className="app-shell__header-actions">{headerActions}</div>
-        ) : null}
-      </header>
-
-      <main
-        className={[
-          "app-shell__body",
-          contentMode === "blank" ? "app-shell__body--blank" : "",
-        ]
-          .filter(Boolean)
-          .join(" ")}
-      >
-        {contentMode === "blank" ? (
-          children
-        ) : (
-          <div className="app-shell__content">{children}</div>
-        )}
-      </main>
+      <main className="app-shell__body">{children}</main>
     </div>
   );
 }

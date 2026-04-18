@@ -30,7 +30,10 @@ test("shell header and content surfaces are styled independently", () => {
     false,
   );
   assert.equal(layoutCss.includes(".app-shell__header"), true);
-  assert.equal(layoutCss.includes(".app-shell__content"), true);
+  assert.equal(layoutCss.includes(".app-shell__content"), false);
+  assert.equal(layoutCss.includes("position: sticky;"), true);
+  assert.equal(layoutCss.includes("border-bottom: 1px solid var(--border);"), true);
+  assert.equal(layoutCss.includes(".app-shell__body {\n  padding: 24px;"), true);
 });
 
 test("react query drives protected app server state and billing splits summary from history", () => {
@@ -98,15 +101,28 @@ test("account linked providers follow the shared query-prefetch path", () => {
   );
 });
 
-test("header controls use the compact theme selector variant and fixed shell sizing", () => {
+test("header controls use the compact theme selector variant and top-level shell header", () => {
   const protectedAppLayout = readRepoFile("src/app/layout/ProtectedAppLayout.tsx");
   const themeSelector = readRepoFile("src/features/settings/ui/ThemeSelector.tsx");
   const layoutCss = readRepoFile("src/shared/styles/layout.css");
+  const appShell = readRepoFile("src/app/layout/AppShell.tsx");
 
   assert.equal(
     protectedAppLayout.includes('<ThemeSelector variant="compact" />'),
     true,
   );
+  assert.equal(appShell.includes("header?: React.ReactNode"), true);
+  assert.equal(appShell.includes('<header className="app-shell__header">'), true);
+  assert.equal(appShell.includes('<main className="app-shell__body">'), true);
+  assert.equal(appShell.includes("app-shell__content"), false);
+  assert.equal(appShell.includes("brand:"), false);
+  assert.equal(appShell.includes("headerActions"), false);
+  assert.equal(protectedAppLayout.includes("header={"), true);
+  assert.equal(protectedAppLayout.includes('className="app-shell__header-inner"'), true);
+  assert.equal(protectedAppLayout.includes('className="app-shell__brand"'), true);
+  assert.equal(protectedAppLayout.includes('className="app-shell__page"'), true);
+  assert.equal(protectedAppLayout.includes("contentMode"), false);
+  assert.equal(protectedAppLayout.includes("location.pathname"), false);
   assert.equal(themeSelector.includes('variant = "default"'), true);
   assert.equal(
     themeSelector.includes("theme-selector__trigger--compact"),

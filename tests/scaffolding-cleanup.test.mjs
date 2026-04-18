@@ -42,7 +42,8 @@ test("/app route composition is split into protected layout and page entries", (
   assert.equal(routePaths.includes('subscription: "/app/subscription"'), true);
   assert.equal(protectedAppLayout.includes("<AppShell"), true);
   assert.equal(protectedAppLayout.includes("<Outlet />"), true);
-  assert.equal(appShell.includes("headerActions"), true);
+  assert.equal(appShell.includes("header?: React.ReactNode"), true);
+  assert.equal(appShell.includes("app-shell__content"), false);
   assert.equal(appHomePage.includes("return null"), true);
   assert.equal(appAccountPage.includes("AuthenticatedSessionPanel"), true);
   assert.equal(appSubscriptionPage.includes("BillingOverviewPanel"), true);
@@ -51,7 +52,7 @@ test("/app route composition is split into protected layout and page entries", (
   assert.equal(appSubscriptionPage.includes("../app/layout/"), false);
 });
 
-test("protected shell keeps /app visually blank and renders the user menu in a portal overlay", () => {
+test("protected shell renders a top-level header and portal-driven controls", () => {
   const protectedAppLayout = readRepoFile(
     "src/app/layout/ProtectedAppLayout.tsx",
   );
@@ -61,16 +62,20 @@ test("protected shell keeps /app visually blank and renders the user menu in a p
   const anchoredOverlay = readRepoFile("src/shared/ui/useAnchoredOverlay.tsx");
   const layoutCss = readRepoFile("src/shared/styles/layout.css");
 
+  assert.equal(protectedAppLayout.includes("app-shell__header-inner"), true);
+  assert.equal(protectedAppLayout.includes("app-shell__page"), true);
+  assert.equal(protectedAppLayout.includes("location.pathname === APP_ROUTES.home"), false);
   assert.equal(
-    protectedAppLayout.includes("location.pathname === APP_ROUTES.home"),
+    appShell.includes('<div className="app-shell">'),
     true,
   );
-  assert.equal(appShell.includes("contentMode"), true);
-  assert.equal(appShell.includes("app-shell__content--blank"), true);
+  assert.equal(appShell.includes('<header className="app-shell__header">'), true);
+  assert.equal(appShell.includes('<main className="app-shell__body">'), true);
+  assert.equal(appShell.includes("app-shell__content"), false);
   assert.equal(appUserMenu.includes("useAnchoredOverlay"), true);
   assert.equal(themeSelector.includes("useAnchoredOverlay"), true);
   assert.equal(anchoredOverlay.includes("createPortal"), true);
   assert.equal(layoutCss.includes(".app-user-menu__popover"), true);
   assert.equal(layoutCss.includes("position: fixed;"), true);
-  assert.equal(layoutCss.includes(".app-shell__content--blank"), true);
+  assert.equal(layoutCss.includes(".app-shell__content"), false);
 });
