@@ -3,10 +3,8 @@ import type {
   BillingCheckoutConfirmResponse,
   BillingCheckoutResultResponse,
   BillingCheckoutSessionResponse,
-  BillingEntitlementsResponse,
   BillingHistoryResponse,
   BillingOverviewResponse,
-  BillingSubscriptionResponse,
 } from "../types/billing.ts";
 
 export async function fetchBillingOverview() {
@@ -16,14 +14,6 @@ export async function fetchBillingOverview() {
       method: "POST",
     },
   );
-}
-
-export async function fetchBillingSubscription() {
-  return requestJson<BillingSubscriptionResponse>("/api/billing/subscription");
-}
-
-export async function fetchBillingEntitlements() {
-  return requestJson<BillingEntitlementsResponse>("/api/billing/entitlements");
 }
 
 export async function fetchBillingHistory() {

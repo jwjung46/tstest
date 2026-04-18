@@ -4,7 +4,13 @@ import { useThemeState } from "../../../platform/theme/useThemeState.ts";
 import type { ThemeId } from "../../../shared/styles/theme-registry.ts";
 import { useAnchoredOverlay } from "../../../shared/ui/useAnchoredOverlay.tsx";
 
-export default function ThemeSelector() {
+type ThemeSelectorProps = {
+  variant?: "default" | "compact";
+};
+
+export default function ThemeSelector({
+  variant = "default",
+}: ThemeSelectorProps) {
   const { availableThemes, themeId } = useThemeState();
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -123,8 +129,23 @@ export default function ThemeSelector() {
   }
 
   return (
-    <div className="theme-selector">
-      <span className="theme-selector__label" id={labelId}>
+    <div
+      className={[
+        "theme-selector",
+        variant === "compact" ? "theme-selector--compact" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <span
+        className={[
+          "theme-selector__label",
+          variant === "compact" ? "theme-selector__label--sr-only" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        id={labelId}
+      >
         Theme
       </span>
       <button
@@ -145,6 +166,11 @@ export default function ThemeSelector() {
         onKeyDown={handleTriggerKeyDown}
         type="button"
       >
+        {variant === "compact" ? (
+          <span aria-hidden="true" className="theme-selector__prefix">
+            Theme
+          </span>
+        ) : null}
         <span className="theme-selector__value" id={buttonTextId}>
           {activeTheme.label}
         </span>

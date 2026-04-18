@@ -15,7 +15,7 @@ export default function ProtectedAppLayout() {
       contentMode={contentMode}
       headerActions={
         <div className="app-shell__header-controls">
-          <ThemeSelector />
+          <ThemeSelector variant="compact" />
           <AppUserMenu />
         </div>
       }

@@ -59,3 +59,69 @@ test("react query drives protected app server state and billing splits summary f
   assert.equal(billingKeys.includes('summary: ["billing", "summary"]'), true);
   assert.equal(billingKeys.includes('history: ["billing", "history"]'), true);
 });
+
+test("account linked providers follow the shared query-prefetch path", () => {
+  const authSessionBootstrap = readRepoFile(
+    "src/app/providers/AuthSessionBootstrap.tsx",
+  );
+  const accountQueries = readRepoFile(
+    "src/features/auth/model/account-queries.ts",
+  );
+  const accountQueryKeys = readRepoFile(
+    "src/features/auth/model/account-query-keys.ts",
+  );
+  const linkedLoginMethodsPanel = readRepoFile(
+    "src/features/auth/ui/LinkedLoginMethodsPanel.tsx",
+  );
+
+  assert.equal(
+    authSessionBootstrap.includes("prefetchLinkedAccountProvidersQuery"),
+    true,
+  );
+  assert.equal(
+    accountQueries.includes("useLinkedAccountProvidersQuery"),
+    true,
+  );
+  assert.equal(
+    accountQueries.includes("fetchLinkedAccountProviders"),
+    true,
+  );
+  assert.equal(
+    accountQueryKeys.includes('linkedProviders: ["account", "linkedProviders"]'),
+    true,
+  );
+  assert.equal(linkedLoginMethodsPanel.includes("useEffect("), false);
+  assert.equal(linkedLoginMethodsPanel.includes("useState("), false);
+  assert.equal(
+    linkedLoginMethodsPanel.includes("useLinkedAccountProvidersQuery"),
+    true,
+  );
+});
+
+test("header controls use the compact theme selector variant and fixed shell sizing", () => {
+  const protectedAppLayout = readRepoFile("src/app/layout/ProtectedAppLayout.tsx");
+  const themeSelector = readRepoFile("src/features/settings/ui/ThemeSelector.tsx");
+  const layoutCss = readRepoFile("src/shared/styles/layout.css");
+
+  assert.equal(
+    protectedAppLayout.includes('<ThemeSelector variant="compact" />'),
+    true,
+  );
+  assert.equal(themeSelector.includes('variant = "default"'), true);
+  assert.equal(
+    themeSelector.includes("theme-selector--compact"),
+    true,
+  );
+  assert.equal(layoutCss.includes("flex-wrap: nowrap;"), true);
+  assert.equal(layoutCss.includes(".theme-selector--compact"), true);
+});
+
+test("billing dead exports are removed after the shared summary query migration", () => {
+  const billingApi = readRepoFile("src/features/billing/services/billing-api.ts");
+  const billingTypes = readRepoFile("src/features/billing/types/billing.ts");
+
+  assert.equal(billingApi.includes("fetchBillingSubscription"), false);
+  assert.equal(billingApi.includes("fetchBillingEntitlements"), false);
+  assert.equal(billingTypes.includes("BillingSubscriptionResponse"), false);
+  assert.equal(billingTypes.includes("BillingEntitlementsResponse"), false);
+});

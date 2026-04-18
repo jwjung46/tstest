@@ -66,7 +66,8 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--space-5);
-  padding: 14px 18px;
+  min-height: 76px;
+  padding: 12px 18px;
   align-items: center;
   border: 1px solid var(--theme-border-subtle);
   border-radius: 22px;
@@ -93,10 +94,10 @@
 
 .app-shell__header-controls {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: end;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .app-user-menu {
@@ -107,7 +108,7 @@
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  min-height: 48px;
+  min-height: 44px;
   padding: 0 16px 0 12px;
   border: 1px solid var(--theme-border-default);
   border-radius: 999px;
@@ -207,12 +208,29 @@
   gap: var(--space-3);
 }
 
+.theme-selector--compact {
+  display: inline-flex;
+  align-items: center;
+}
+
 .theme-selector__label {
   color: var(--theme-text-secondary);
   font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.theme-selector__label--sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .theme-selector__trigger {
@@ -231,9 +249,24 @@
   cursor: pointer;
 }
 
+.theme-selector--compact .theme-selector__trigger {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 14px;
+  gap: var(--space-3);
+}
+
 .theme-selector__trigger:hover,
 .theme-selector__trigger[aria-expanded="true"] {
   border-color: var(--theme-border-strong);
+}
+
+.theme-selector__prefix {
+  color: var(--theme-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .theme-selector__value {
@@ -319,6 +352,7 @@
 
   .app-shell__header-controls {
     width: 100%;
+    flex-wrap: wrap;
     justify-content: stretch;
   }
 

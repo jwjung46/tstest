@@ -133,14 +133,6 @@ export type BillingOverviewResponse = {
   paymentMethods: [];
 };
 
-export type BillingSubscriptionResponse = {
-  subscription: BillingSubscription | null;
-};
-
-export type BillingEntitlementsResponse = {
-  entitlements: EntitlementSummary[];
-};
-
 export type BillingHistoryResponse = {
   cycles: BillingCycleSummary[];
   events: BillingEventSummary[];

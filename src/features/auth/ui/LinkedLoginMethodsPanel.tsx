@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ApiError } from "../../../platform/api/client.ts";
 import { getAuthProviderLabel } from "../config/providers.ts";
 import { getLinkedProviderCardViewModel } from "../model/account-ui.ts";
 import { getAccountLinkFeedback } from "../model/auth.ts";
-import { fetchLinkedAccountProviders } from "../services/account-api.ts";
+import { useLinkedAccountProvidersQuery } from "../model/account-queries.ts";
 import type { LinkedAccountProvider } from "../types/account.ts";
 
 function getErrorMessage(error: unknown) {
@@ -84,12 +83,8 @@ export function LinkedProviderCard({
 }
 
 export default function LinkedLoginMethodsPanel() {
-  const [providers, setProviders] = useState<LinkedAccountProvider[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">(
-    "loading",
-  );
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
+  const linkedProvidersQuery = useLinkedAccountProvidersQuery();
   const feedback = getAccountLinkFeedback({
     accountLinkError: searchParams.get("accountLinkError"),
     accountLinkSuccess: searchParams.get("accountLinkSuccess"),
@@ -101,38 +96,10 @@ export default function LinkedLoginMethodsPanel() {
       ) ?? null,
   });
 
-  useEffect(() => {
-    let isActive = true;
-
-    async function load() {
-      setStatus("loading");
-      setErrorMessage(null);
-
-      try {
-        const nextProviders = await fetchLinkedAccountProviders();
-
-        if (!isActive) {
-          return;
-        }
-
-        setProviders(nextProviders);
-        setStatus("ready");
-      } catch (error) {
-        if (!isActive) {
-          return;
-        }
-
-        setStatus("error");
-        setErrorMessage(getErrorMessage(error));
-      }
-    }
-
-    void load();
-
-    return () => {
-      isActive = false;
-    };
-  }, []);
+  const providers: LinkedAccountProvider[] = linkedProvidersQuery.data ?? [];
+  const errorMessage = linkedProvidersQuery.isError
+    ? getErrorMessage(linkedProvidersQuery.error)
+    : null;
 
   return (
     <section className="linked-login-methods" aria-label="Linked login methods">
@@ -153,17 +120,27 @@ export default function LinkedLoginMethodsPanel() {
         </p>
       ) : null}
 
-      {status === "error" ? (
+      {linkedProvidersQuery.isError ? (
         <p className="notes-feedback notes-feedback--error" role="alert">
           {errorMessage}
         </p>
       ) : null}
 
-      <div className="linked-login-methods__grid">
-        {providers.map((provider) => (
-          <LinkedProviderCard key={provider.provider} provider={provider} />
-        ))}
-      </div>
+      {linkedProvidersQuery.isPending ? (
+        <p className="hint" role="status">
+          Loading linked login methods...
+        </p>
+      ) : providers.length === 0 ? (
+        <p className="hint" role="status">
+          No linked login methods are available right now.
+        </p>
+      ) : (
+        <div className="linked-login-methods__grid">
+          {providers.map((provider) => (
+            <LinkedProviderCard key={provider.provider} provider={provider} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
