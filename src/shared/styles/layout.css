@@ -9,6 +9,14 @@
   display: grid;
   gap: var(--space-8);
   align-content: center;
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  max-width: none;
+  background-image: url("/landing-bg.png");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .eyebrow {
@@ -44,6 +52,7 @@
   font-size: clamp(2.4rem, 5vw, 4.4rem);
   line-height: 0.98;
   letter-spacing: -0.04em;
+  text-align: center;
 }
 
 .landing-login-card__brand,

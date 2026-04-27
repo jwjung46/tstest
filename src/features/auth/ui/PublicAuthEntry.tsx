@@ -37,8 +37,7 @@ export default function PublicAuthEntry() {
     <PageContainer className="page-container--landing">
       <div className="landing-login-card">
         <div className="landing-login-card__header">
-          <span className="landing-login-card__brand">Teamspace</span>
-          <h1 className="landing-login-card__title">Sign in</h1>
+          <h1 className="landing-login-card__title">우리 원영이네</h1>
         </div>
 
         {publicAuthFeedback ? (

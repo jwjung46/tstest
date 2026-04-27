@@ -8,7 +8,7 @@ export default function ProtectedAppLayout() {
     <AppShell
       header={
         <div className="app-shell__header-inner">
-          <div className="app-shell__brand">Teamspace</div>
+          <div className="app-shell__brand">이세계의 원영이네</div>
 
           <div className="app-shell__header-controls">
             <ThemeSelector variant="compact" />
