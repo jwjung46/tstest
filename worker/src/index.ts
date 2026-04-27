@@ -1,5 +1,6 @@
 import { handleOAuthCallback, handleOAuthStart } from "./oauth/flow.ts";
 import type { WorkerEnv } from "./env.ts";
+import { handleWorkItemsApiRequest } from "./work-items/api.ts";
 import {
   createSessionSnapshotResponse,
   createSignOutResponse,
@@ -35,6 +36,12 @@ async function handleRequest(request: Request, env: WorkerEnv) {
 
   if (url.pathname === "/auth/sign-out" && request.method === "POST") {
     return createSignOutResponse(isSecureRequest);
+  }
+
+  const workItemsResponse = await handleWorkItemsApiRequest(request, env);
+
+  if (workItemsResponse) {
+    return workItemsResponse;
   }
 
   const authRoute = matchAuthRoute(url.pathname);

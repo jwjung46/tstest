@@ -47,7 +47,8 @@ test("/app route composition is split into protected layout and page entries", (
   assert.equal(protectedAppLayout.includes("<Outlet />"), true);
   assert.equal(appShell.includes("header?: React.ReactNode"), true);
   assert.equal(appShell.includes("app-shell__content"), false);
-  assert.equal(appHomePage.includes("return null"), true);
+  assert.equal(appHomePage.includes("WorkItemList"), true);
+  assert.equal(appHomePage.includes("fetch("), false);
   assert.equal(existsSync(appAccountPagePath), false);
   assert.equal(existsSync(protectedAppPageContentPath), false);
 });

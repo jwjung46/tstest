@@ -2,9 +2,9 @@
 
 ## Current status
 
-- Current stage: Blank protected app shell baseline.
-- Verified state: The app has a public `/` route; a protected `/app` route; a Worker boundary for `/auth/*`, `/auth/sign-out`, and `/api/session`; Google/Kakao/Naver OAuth start and callback flows; Worker-handled sign-out; internal `users` plus `user_identities`; internal-user-backed sessions; and browser-local recent-login provider hinting. The protected shell uses a shared header with theme selection plus a user menu, and `/app` is intentionally blank below the header.
-- Operating rule: The current app has no product feature mounted in the protected app body. New product features must be added only through an explicitly scoped cycle that defines the feature boundary, implementation location, validation, and documentation update.
+- Current stage: Cycle 1 work-items list slice.
+- Verified state: The app has a public `/` route; a protected `/app` route; a Worker boundary for `/auth/*`, `/auth/sign-out`, `/api/session`, and `GET /api/work-items`; Google/Kakao/Naver OAuth start and callback flows; Worker-handled sign-out; internal `users` plus `user_identities`; internal-user-backed sessions; and browser-local recent-login provider hinting. The protected shell uses a shared header with theme selection plus a user menu, and `/app` mounts the work item list feature in the protected body.
+- Operating rule: The current app has only the first work-items list feature mounted in the protected app body. New product behavior must be added only through an explicitly scoped cycle that defines the feature boundary, implementation location, validation, and documentation update.
 - Verification gate: `npm run verify` is the standard completion gate for cleanup and feature cycles. It runs format checking, linting, type checking, and build only.
 
 ## Next product domain
@@ -196,6 +196,12 @@ Out of scope for the first work-item implementation slice:
 - What: Removed the active `/app/account` route, account menu link, account page, linked-provider UI, account-management frontend query/prefetch path, and account-management Worker API handler while preserving OAuth sign-in, session snapshots, sign-out, the protected shell, and internal account identity tables used by auth/session.
 - Why: The protected app baseline should stay a clean blank shell until the next explicitly scoped product stage, without keeping account-management UI mounted as current app scope.
 
+### 33. Cycle 1 work-items list slice
+
+- What: Added the first work-items vertical slice: a `work_items` D1 table, `GET /api/work-items`, a `features/work-items` frontend module, and `/app` now mounts the work item list.
+- Why: This introduces the first real product domain while preserving the existing public route, protected shell, OAuth/session/sign-out behavior, theme selector, and user menu.
+- Scope note: Creation, files, AI, logs, acknowledgement badges, result upload, and status transitions remain out of scope.
+
 ## Decisions fixed so far
 
 - Language: TypeScript.
@@ -214,4 +220,4 @@ Out of scope for the first work-item implementation slice:
 
 ## Next planned stage
 
-- Add the first product feature only through a small vertical slice cycle. The next cycle must keep the current auth/session, protected shell, theme selection, sign-out, and blank `/app` baseline intact unless the user explicitly changes the baseline.
+- Add the next work-items behavior only through a small vertical slice cycle. The next cycle must keep the current auth/session, protected shell, theme selection, sign-out, and work item list baseline intact unless the user explicitly changes the baseline.
