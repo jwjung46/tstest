@@ -2,8 +2,8 @@
 
 ## Current status
 
-- Current stage: Cleanup baseline after removing the previously active payment feature from the app, Worker, migrations, tests, and current-scope docs.
-- Verified state: The app has a public `/` route; protected `/app` and `/app/account` routes; a Worker boundary for `/auth/*` and `/api/*`; Google/Kakao/Naver OAuth start and callback flows; signed sign-in vs link state handling; Worker-handled sign-out; internal `users` plus `user_identities`; internal-user-backed sessions; browser-local recent-login provider hinting; linked-provider lookup in the protected app area; and merge foundations. The protected shell uses a shared header with theme selection plus a user menu, `/app` is intentionally blank below the header, `/app/account` mounts the existing account/session surfaces, and account-linking returns resolve to `/app/account`. The standard verification gate is `npm run verify`, which runs format checking, linting, type checking, and build only.
+- Current stage: Cleanup baseline after removing the previously active payment, notes, and account-management app surfaces from the protected app.
+- Verified state: The app has a public `/` route; protected `/app` route; a Worker boundary for `/auth/*` and `/api/session`; Google/Kakao/Naver OAuth start and callback flows; Worker-handled sign-out; internal `users` plus `user_identities`; internal-user-backed sessions; and browser-local recent-login provider hinting. The protected shell uses a shared header with theme selection plus a user menu, and `/app` is intentionally blank below the header. The standard verification gate is `npm run verify`, which runs format checking, linting, type checking, and build only.
 
 ## Completed work
 
@@ -157,6 +157,11 @@
 - What: Added `npm run verify` as the standard completion gate, documented it in README validation instructions, and added a GitHub Actions workflow that runs it on pull requests and pushes to `main`.
 - Why: Cleanup and feature cycles now share one repeatable baseline without adding tests or git hooks yet.
 
+### 32. Account-management surface cleanup
+
+- What: Removed the active `/app/account` route, account menu link, account page, linked-provider UI, account-management frontend query/prefetch path, and account-management Worker API handler while preserving OAuth sign-in, session snapshots, sign-out, the protected shell, and internal account identity tables used by auth/session.
+- Why: The protected app baseline should stay a clean blank shell until the next explicitly scoped product stage, without keeping account-management UI mounted as current app scope.
+
 ## Decisions fixed so far
 
 - Language: TypeScript.
@@ -172,8 +177,7 @@
 ## Not done yet
 
 - Durable session persistence beyond the current signed-cookie session boundary.
-- End-user merge wizard UI, unlink UI, automatic email-based linking, role systems, refresh-token rotation, or richer profile/settings flows.
 
 ## Next planned stage
 
-- Keep the current auth/account shell baseline stable until the next explicitly scoped product stage.
+- Keep the current blank protected app shell and auth/session baseline stable until the next explicitly scoped product stage.

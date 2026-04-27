@@ -1,17 +1,16 @@
 # tstest
 
-Cloudflare Worker auth/session boundary for an application with internal `users` + `user_identities`, provider linking, merge foundations, and a protected app shell.
+Cloudflare Worker auth/session boundary for an application with internal `users` + `user_identities`, OAuth sign-in, and a protected app shell.
 
 ## Current Scope
 
 - Public route: `/`
-- Protected routes: `/app`, `/app/account`
-- Worker-owned routes: `/auth/*`, `/api/*`
+- Protected route: `/app`
+- Worker-owned routes: `/auth/*`, `/api/session`
 - Auth providers: Google, Kakao, Naver
-- Canonical account model: internal user + linked identities
+- Canonical account model: internal user + provider identities
 - Current protected shell:
   - `/app`: header-only protected home with blank body
-  - `/app/account`: account/session summary plus linked-provider management
   - shared header overlays use body-level fixed portal popovers to avoid stacking conflicts with the shell panels
 
 ## Architecture
@@ -19,17 +18,15 @@ Cloudflare Worker auth/session boundary for an application with internal `users`
 - `src/pages`: route entry points only
 - `src/features`: feature-owned UI, state, services, and validation
 - `src/platform`: shared API/session boundaries
-- `worker/src`: OAuth, session, account linking, and D1 integration
+- `worker/src`: OAuth, session, account identity, and D1 integration
 
 Feature modules are composed through the protected app shell. Page components remain route entry points and do not own feature domain logic.
 
 ## Internal Account Model
 
 - `users` is the canonical app account table.
-- `user_identities` stores linked provider identities.
+- `user_identities` stores provider identities for session resolution.
 - Session `user.id` is an internal user id, not a provider id.
-- Linking is explicit and only allowed while signed in.
-- Automatic email linking, unlink UI, and end-user merge UI are intentionally not shipped yet.
 
 ## Cloudflare Local and Deployment Setup
 

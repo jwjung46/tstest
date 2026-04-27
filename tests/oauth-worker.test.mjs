@@ -423,7 +423,7 @@ test("callback routes provider-declared failures through the link feedback path 
   assert.equal(callbackResponse.status, 302);
   assert.equal(
     callbackResponse.headers.get("location"),
-    "/app/account?tab=linked&accountLinkError=oauth_callback_failed&accountLinkProvider=naver",
+    "/app?tab=linked&accountLinkError=oauth_callback_failed&accountLinkProvider=naver",
   );
 });
 
@@ -827,7 +827,7 @@ test("link intent start stores distinct signed state from normal sign-in", async
   assert.deepEqual(statePayload, {
     intent: "link",
     provider: "naver",
-    redirectTo: "/app/account",
+    redirectTo: "/app",
     state: redirectUrl.searchParams.get("state"),
     currentUserId: "user-1",
   });
@@ -939,7 +939,7 @@ test("link callback rejects provider identities already linked to another user",
     assert.equal(callbackResponse.status, 302);
     assert.equal(
       callbackResponse.headers.get("location"),
-      "/app/account?accountLinkError=identity_linked_to_other_user&accountLinkProvider=google",
+      "/app?accountLinkError=identity_linked_to_other_user&accountLinkProvider=google",
     );
   } finally {
     global.fetch = originalFetch;
@@ -1047,7 +1047,7 @@ test("link callback attaches a new provider to the existing internal user", asyn
     assert.equal(callbackResponse.status, 302);
     assert.equal(
       callbackResponse.headers.get("location"),
-      "/app/account?accountLinkSuccess=naver",
+      "/app?accountLinkSuccess=naver",
     );
     assert.equal(env.DB.state.userIdentities.length, 2);
     assert.deepEqual(

@@ -27,28 +27,29 @@ test("/app route composition is split into protected layout and page entries", (
   );
   const appShell = readRepoFile("src/app/layout/AppShell.tsx");
   const appHomePage = readRepoFile("src/pages/AppHomePage.tsx");
-  const appAccountPage = readRepoFile("src/pages/AppAccountPage.tsx");
+  const appAccountPagePath = resolve(repoRoot, "src/pages/AppAccountPage.tsx");
   const protectedAppPageContentPath = resolve(
     repoRoot,
     "src/app/layout/ProtectedAppPageContent.tsx",
   );
 
   assert.equal(router.includes("ProtectedAppLayout"), true);
-  assert.equal(router.includes("APP_ROUTE_SEGMENTS.account"), true);
+  assert.equal(router.includes("APP_ROUTE_SEGMENTS.account"), false);
+  assert.equal(router.includes("AppAccountPage"), false);
   assert.equal(
     router.includes(`APP_ROUTE_SEGMENTS.${"sub"}${"scription"}`),
     false,
   );
   assert.equal(routePaths.includes('home: "/app"'), true);
-  assert.equal(routePaths.includes('account: "/app/account"'), true);
+  assert.equal(routePaths.includes('account: "/app/account"'), false);
+  assert.equal(routePaths.includes("APP_ROUTE_SEGMENTS"), false);
   assert.equal(protectedAppLayout.includes("<AppShell"), true);
   assert.equal(protectedAppLayout.includes("<Outlet />"), true);
   assert.equal(appShell.includes("header?: React.ReactNode"), true);
   assert.equal(appShell.includes("app-shell__content"), false);
   assert.equal(appHomePage.includes("return null"), true);
-  assert.equal(appAccountPage.includes("AuthenticatedSessionPanel"), true);
+  assert.equal(existsSync(appAccountPagePath), false);
   assert.equal(existsSync(protectedAppPageContentPath), false);
-  assert.equal(appAccountPage.includes("../app/layout/"), false);
 });
 
 test("protected shell renders a top-level header and portal-driven controls", () => {
@@ -77,6 +78,8 @@ test("protected shell renders a top-level header and portal-driven controls", ()
   assert.equal(appShell.includes('<main className="app-shell__body">'), true);
   assert.equal(appShell.includes("app-shell__content"), false);
   assert.equal(appUserMenu.includes("useAnchoredOverlay"), true);
+  assert.equal(appUserMenu.includes("APP_ROUTES.account"), false);
+  assert.equal(appUserMenu.includes(">Account<"), false);
   assert.equal(themeSelector.includes("useAnchoredOverlay"), true);
   assert.equal(anchoredOverlay.includes("createPortal"), true);
   assert.equal(layoutCss.includes(".app-user-menu__popover"), true);

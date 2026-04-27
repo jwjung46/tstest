@@ -188,30 +188,6 @@ export async function linkIdentityToUser(
   };
 }
 
-export async function listAccountProviders(db: D1Database, userId: string) {
-  const identities = await listIdentitiesByUserId(db, userId);
-  const byProvider = new Map(
-    identities.map((identity) => [identity.provider, identity]),
-  );
-
-  return (["google", "kakao", "naver"] as const).map((provider) => {
-    const identity = byProvider.get(provider);
-
-    return {
-      provider,
-      isLinked: Boolean(identity),
-      email: identity?.email ?? null,
-      emailVerified:
-        identity?.email_verified === null ||
-        identity?.email_verified === undefined
-          ? null
-          : identity.email_verified === 1,
-      providerDisplayName: identity?.provider_display_name ?? null,
-      lastLoginAt: identity?.last_login_at ?? null,
-    };
-  });
-}
-
 export async function mergeUsers(
   db: D1Database,
   {

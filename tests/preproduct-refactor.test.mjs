@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const repoRoot = resolve(import.meta.dirname, "..");
@@ -46,56 +46,50 @@ test("shell header and content surfaces are styled independently", () => {
   );
 });
 
-test("react query drives protected app account server state", () => {
+test("protected app bootstrap keeps account-management queries inactive", () => {
   const packageJson = readRepoFile("package.json");
   const main = readRepoFile("src/main.tsx");
   const authSessionBootstrap = readRepoFile(
     "src/app/providers/AuthSessionBootstrap.tsx",
-  );
-  const accountQueries = readRepoFile(
-    "src/features/auth/model/account-queries.ts",
   );
 
   assert.equal(packageJson.includes("@tanstack/react-query"), true);
   assert.equal(main.includes("QueryClientProvider"), true);
   assert.equal(
     authSessionBootstrap.includes("prefetchLinkedAccountProvidersQuery"),
-    true,
+    false,
   );
-  assert.equal(accountQueries.includes("useLinkedAccountProvidersQuery"), true);
+  assert.equal(
+    existsSync(resolve(repoRoot, "src/features/auth/model/account-queries.ts")),
+    false,
+  );
 });
 
-test("account linked providers follow the shared query-prefetch path", () => {
+test("linked-provider account UI is not mounted in the protected app", () => {
   const authSessionBootstrap = readRepoFile(
     "src/app/providers/AuthSessionBootstrap.tsx",
   );
-  const accountQueries = readRepoFile(
-    "src/features/auth/model/account-queries.ts",
-  );
-  const accountQueryKeys = readRepoFile(
-    "src/features/auth/model/account-query-keys.ts",
-  );
-  const linkedLoginMethodsPanel = readRepoFile(
-    "src/features/auth/ui/LinkedLoginMethodsPanel.tsx",
-  );
+  const router = readRepoFile("src/app/router.tsx");
+  const appUserMenu = readRepoFile("src/app/layout/AppUserMenu.tsx");
 
   assert.equal(
     authSessionBootstrap.includes("prefetchLinkedAccountProvidersQuery"),
-    true,
+    false,
   );
-  assert.equal(accountQueries.includes("useLinkedAccountProvidersQuery"), true);
-  assert.equal(accountQueries.includes("fetchLinkedAccountProviders"), true);
+  assert.equal(router.includes("LinkedLoginMethodsPanel"), false);
+  assert.equal(router.includes("AuthenticatedSessionPanel"), false);
+  assert.equal(appUserMenu.includes("APP_ROUTES.account"), false);
   assert.equal(
-    accountQueryKeys.includes(
-      'linkedProviders: ["account", "linkedProviders"]',
+    existsSync(
+      resolve(repoRoot, "src/features/auth/ui/LinkedLoginMethodsPanel.tsx"),
     ),
-    true,
+    false,
   );
-  assert.equal(linkedLoginMethodsPanel.includes("useEffect("), false);
-  assert.equal(linkedLoginMethodsPanel.includes("useState("), false);
   assert.equal(
-    linkedLoginMethodsPanel.includes("useLinkedAccountProvidersQuery"),
-    true,
+    existsSync(
+      resolve(repoRoot, "src/features/auth/ui/AuthenticatedSessionPanel.tsx"),
+    ),
+    false,
   );
 });
 

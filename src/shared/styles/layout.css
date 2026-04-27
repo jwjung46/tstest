@@ -47,8 +47,7 @@
 }
 
 .landing-login-card__brand,
-.app-shell__brand,
-.linked-login-methods__title {
+.app-shell__brand {
   color: var(--theme-text-primary);
 }
 
@@ -159,20 +158,6 @@
   border-radius: 22px;
   background: var(--theme-surface-panel-strong);
   box-shadow: var(--theme-shadow-elevated);
-}
-
-.app-user-menu__item {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 14px;
-  border-radius: 14px;
-  color: var(--theme-text-primary);
-  text-decoration: none;
-}
-
-.app-user-menu__item:hover {
-  background: var(--theme-surface-card-soft);
 }
 
 .app-user-menu__sign-out-form,

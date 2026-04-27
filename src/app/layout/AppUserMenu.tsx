@@ -1,6 +1,4 @@
 import { useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { Link } from "react-router-dom";
-import { APP_ROUTES } from "../router/paths.ts";
 import { useAuthState } from "../../features/auth/model/useAuthState.ts";
 import { getAuthenticatedUserSummaryDetails } from "../../features/auth/model/account-ui.ts";
 import SignOutForm from "../../features/auth/ui/SignOutForm.tsx";
@@ -97,16 +95,6 @@ export default function AppUserMenu() {
           id={menuId}
           role="menu"
         >
-          <Link
-            className="app-user-menu__item"
-            onClick={() => {
-              overlay.dismiss();
-            }}
-            role="menuitem"
-            to={APP_ROUTES.account}
-          >
-            Account
-          </Link>
           <div className="app-user-menu__sign-out" role="none">
             <SignOutForm className="app-user-menu__sign-out-form" />
           </div>

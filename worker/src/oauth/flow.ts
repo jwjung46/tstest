@@ -94,10 +94,6 @@ function normalizeOAuthIntent(value: string | null) {
 function normalizeLinkRedirectTarget(redirectTo: string) {
   const url = new URL(redirectTo, "https://app.example");
 
-  if (url.pathname === "/app") {
-    url.pathname = "/app/account";
-  }
-
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
@@ -335,7 +331,7 @@ export async function handleOAuthStart(
   const state = createStateToken();
   const redirectTo = normalizeRedirectTarget(
     requestUrl.searchParams.get("redirectTo"),
-    intent === "link" ? "/app/account" : "/app",
+    "/app",
   );
   const resolvedRedirectTo =
     intent === "link" ? normalizeLinkRedirectTarget(redirectTo) : redirectTo;
