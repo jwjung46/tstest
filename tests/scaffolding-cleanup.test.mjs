@@ -58,18 +58,23 @@ test("protected shell renders a top-level header and portal-driven controls", ()
   );
   const appShell = readRepoFile("src/app/layout/AppShell.tsx");
   const appUserMenu = readRepoFile("src/app/layout/AppUserMenu.tsx");
-  const themeSelector = readRepoFile("src/features/settings/ui/ThemeSelector.tsx");
+  const themeSelector = readRepoFile(
+    "src/features/settings/ui/ThemeSelector.tsx",
+  );
   const anchoredOverlay = readRepoFile("src/shared/ui/useAnchoredOverlay.tsx");
   const layoutCss = readRepoFile("src/shared/styles/layout.css");
 
   assert.equal(protectedAppLayout.includes("app-shell__header-inner"), true);
   assert.equal(protectedAppLayout.includes("app-shell__page"), true);
-  assert.equal(protectedAppLayout.includes("location.pathname === APP_ROUTES.home"), false);
   assert.equal(
-    appShell.includes('<div className="app-shell">'),
+    protectedAppLayout.includes("location.pathname === APP_ROUTES.home"),
+    false,
+  );
+  assert.equal(appShell.includes('<div className="app-shell">'), true);
+  assert.equal(
+    appShell.includes('<header className="app-shell__header">'),
     true,
   );
-  assert.equal(appShell.includes('<header className="app-shell__header">'), true);
   assert.equal(appShell.includes('<main className="app-shell__body">'), true);
   assert.equal(appShell.includes("app-shell__content"), false);
   assert.equal(appUserMenu.includes("useAnchoredOverlay"), true);

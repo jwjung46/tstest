@@ -11,7 +11,9 @@ function readRepoFile(relativePath) {
 
 test("overlay behavior is routed through one shared primitive", () => {
   const appUserMenu = readRepoFile("src/app/layout/AppUserMenu.tsx");
-  const themeSelector = readRepoFile("src/features/settings/ui/ThemeSelector.tsx");
+  const themeSelector = readRepoFile(
+    "src/features/settings/ui/ThemeSelector.tsx",
+  );
   const overlayHook = readRepoFile("src/shared/ui/useAnchoredOverlay.tsx");
 
   assert.equal(overlayHook.includes("createPortal"), true);
@@ -26,14 +28,22 @@ test("shell header and content surfaces are styled independently", () => {
   const layoutCss = readRepoFile("src/shared/styles/layout.css");
 
   assert.equal(
-    layoutCss.includes(".empty-state,\n.app-shell__header,\n.app-shell__content"),
+    layoutCss.includes(
+      ".empty-state,\n.app-shell__header,\n.app-shell__content",
+    ),
     false,
   );
   assert.equal(layoutCss.includes(".app-shell__header"), true);
   assert.equal(layoutCss.includes(".app-shell__content"), false);
   assert.equal(layoutCss.includes("position: sticky;"), true);
-  assert.equal(layoutCss.includes("border-bottom: 1px solid var(--border);"), true);
-  assert.equal(layoutCss.includes(".app-shell__body {\n  padding: 24px;"), true);
+  assert.equal(
+    layoutCss.includes("border-bottom: 1px solid var(--border);"),
+    true,
+  );
+  assert.equal(
+    layoutCss.includes(".app-shell__body {\n  padding: 24px;"),
+    true,
+  );
 });
 
 test("react query drives protected app server state and billing splits summary from history", () => {
@@ -48,11 +58,16 @@ test("react query drives protected app server state and billing splits summary f
   const billingQueries = readRepoFile(
     "src/features/billing/model/billing-queries.ts",
   );
-  const billingKeys = readRepoFile("src/features/billing/model/billing-query-keys.ts");
+  const billingKeys = readRepoFile(
+    "src/features/billing/model/billing-query-keys.ts",
+  );
 
   assert.equal(packageJson.includes("@tanstack/react-query"), true);
   assert.equal(main.includes("QueryClientProvider"), true);
-  assert.equal(authSessionBootstrap.includes("prefetchBillingSummaryQuery"), true);
+  assert.equal(
+    authSessionBootstrap.includes("prefetchBillingSummaryQuery"),
+    true,
+  );
   assert.equal(billingOverview.includes("useBillingSummaryQuery"), true);
   assert.equal(billingOverview.includes("useBillingHistoryQuery"), true);
   assert.equal(billingOverview.includes("fetchBillingSubscription()"), false);
@@ -81,16 +96,12 @@ test("account linked providers follow the shared query-prefetch path", () => {
     authSessionBootstrap.includes("prefetchLinkedAccountProvidersQuery"),
     true,
   );
+  assert.equal(accountQueries.includes("useLinkedAccountProvidersQuery"), true);
+  assert.equal(accountQueries.includes("fetchLinkedAccountProviders"), true);
   assert.equal(
-    accountQueries.includes("useLinkedAccountProvidersQuery"),
-    true,
-  );
-  assert.equal(
-    accountQueries.includes("fetchLinkedAccountProviders"),
-    true,
-  );
-  assert.equal(
-    accountQueryKeys.includes('linkedProviders: ["account", "linkedProviders"]'),
+    accountQueryKeys.includes(
+      'linkedProviders: ["account", "linkedProviders"]',
+    ),
     true,
   );
   assert.equal(linkedLoginMethodsPanel.includes("useEffect("), false);
@@ -102,8 +113,12 @@ test("account linked providers follow the shared query-prefetch path", () => {
 });
 
 test("header controls use the compact theme selector variant and top-level shell header", () => {
-  const protectedAppLayout = readRepoFile("src/app/layout/ProtectedAppLayout.tsx");
-  const themeSelector = readRepoFile("src/features/settings/ui/ThemeSelector.tsx");
+  const protectedAppLayout = readRepoFile(
+    "src/app/layout/ProtectedAppLayout.tsx",
+  );
+  const themeSelector = readRepoFile(
+    "src/features/settings/ui/ThemeSelector.tsx",
+  );
   const layoutCss = readRepoFile("src/shared/styles/layout.css");
   const appShell = readRepoFile("src/app/layout/AppShell.tsx");
 
@@ -112,15 +127,27 @@ test("header controls use the compact theme selector variant and top-level shell
     true,
   );
   assert.equal(appShell.includes("header?: React.ReactNode"), true);
-  assert.equal(appShell.includes('<header className="app-shell__header">'), true);
+  assert.equal(
+    appShell.includes('<header className="app-shell__header">'),
+    true,
+  );
   assert.equal(appShell.includes('<main className="app-shell__body">'), true);
   assert.equal(appShell.includes("app-shell__content"), false);
   assert.equal(appShell.includes("brand:"), false);
   assert.equal(appShell.includes("headerActions"), false);
   assert.equal(protectedAppLayout.includes("header={"), true);
-  assert.equal(protectedAppLayout.includes('className="app-shell__header-inner"'), true);
-  assert.equal(protectedAppLayout.includes('className="app-shell__brand"'), true);
-  assert.equal(protectedAppLayout.includes('className="app-shell__page"'), true);
+  assert.equal(
+    protectedAppLayout.includes('className="app-shell__header-inner"'),
+    true,
+  );
+  assert.equal(
+    protectedAppLayout.includes('className="app-shell__brand"'),
+    true,
+  );
+  assert.equal(
+    protectedAppLayout.includes('className="app-shell__page"'),
+    true,
+  );
   assert.equal(protectedAppLayout.includes("contentMode"), false);
   assert.equal(protectedAppLayout.includes("location.pathname"), false);
   assert.equal(themeSelector.includes('variant = "default"'), true);
@@ -129,7 +156,9 @@ test("header controls use the compact theme selector variant and top-level shell
     true,
   );
   assert.equal(
-    themeSelector.includes('aria-label={variant === "compact" ? "Theme" : undefined}'),
+    themeSelector.includes(
+      'aria-label={variant === "compact" ? "Theme" : undefined}',
+    ),
     true,
   );
   assert.equal(themeSelector.includes("theme-selector__prefix"), false);
@@ -141,7 +170,9 @@ test("header controls use the compact theme selector variant and top-level shell
 });
 
 test("billing dead exports are removed after the shared summary query migration", () => {
-  const billingApi = readRepoFile("src/features/billing/services/billing-api.ts");
+  const billingApi = readRepoFile(
+    "src/features/billing/services/billing-api.ts",
+  );
   const billingTypes = readRepoFile("src/features/billing/types/billing.ts");
 
   assert.equal(billingApi.includes("fetchBillingSubscription"), false);

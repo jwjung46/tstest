@@ -132,11 +132,12 @@ npm run dev:cf
 ## Validation
 
 ```bash
-npm run format
-npm run lint
-npm run typecheck
-npm run build
+npm run verify
 ```
+
+`npm run verify` is the standard completion gate for cleanup and feature cycles.
+It runs `format:check`, `lint`, `typecheck`, and `build`. Tests are not part of
+the gate yet.
 
 ## Still Deferred
 

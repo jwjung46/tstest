@@ -44,7 +44,10 @@ test("billing overview falls back to a compact summary loading state before the 
   assert.equal(view.summary.state, "loading");
   assert.equal(view.summary.title, "Loading current billing summary");
   assert.equal(view.secondary.state, "idle");
-  assert.equal(view.secondary.title, "Billing activity appears after the summary loads");
+  assert.equal(
+    view.secondary.title,
+    "Billing activity appears after the summary loads",
+  );
 });
 
 test("billing overview reports empty secondary activity without collapsing the summary section", () => {
@@ -84,6 +87,9 @@ test("billing overview surfaces section-level errors instead of reverting the fu
   });
 
   assert.equal(view.summary.state, "error");
-  assert.equal(view.summary.description, "Billing details could not be loaded right now.");
+  assert.equal(
+    view.summary.description,
+    "Billing details could not be loaded right now.",
+  );
   assert.equal(view.secondary.state, "idle");
 });
