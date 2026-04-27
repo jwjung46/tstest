@@ -11,7 +11,7 @@ export default function ProtectedRoute() {
   const authRequirement = requireAuth(authState);
 
   if (!authRequirement.allowed && authRequirement.reason === "loading") {
-    return <div className="protected-route-placeholder" aria-hidden="true" />;
+    return null;
   }
 
   if (
