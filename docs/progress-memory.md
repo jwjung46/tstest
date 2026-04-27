@@ -7,6 +7,38 @@
 - Operating rule: The current app has no product feature mounted in the protected app body. New product features must be added only through an explicitly scoped cycle that defines the feature boundary, implementation location, validation, and documentation update.
 - Verification gate: `npm run verify` is the standard completion gate for cleanup and feature cycles. It runs format checking, linting, type checking, and build only.
 
+## Next product domain
+
+The first product domain will be `work-items`.
+
+A `WorkItem` means a human-managed patent work unit shared between a requester and a worker. It is not an AI job, not a legal case record, and not a generic task.
+
+The requester creates the work item, reviews the result, reports it externally, and finalizes the work. The worker handles the assigned work and marks it complete when the work output is ready.
+
+Initial work item types:
+
+- `oa_response`: OA 검토의견서 작성
+- `prior_art_search`: 선행기술조사 보고서 작성
+- `translation_review`: 번역 검수
+
+Initial work item statuses:
+
+- `processing`: 업무 등록 후 처리 중
+- `completed`: 작업자가 처리 완료
+- `reported`: 요청자가 외부 보고 완료
+- `closed`: 업무 종료
+
+A newly created work item starts in `processing`.
+
+Out of scope for the first work-item implementation slice:
+
+- file attachments
+- AI jobs
+- activity logs
+- user acknowledgement badges
+- result file upload
+- status transition UI beyond displaying the current status
+
 ## Completed work
 
 ### 1. Git repository
