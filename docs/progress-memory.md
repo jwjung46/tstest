@@ -2,8 +2,10 @@
 
 ## Current status
 
-- Current stage: Cleanup baseline after removing the previously active payment, notes, and account-management app surfaces from the protected app.
-- Verified state: The app has a public `/` route; protected `/app` route; a Worker boundary for `/auth/*` and `/api/session`; Google/Kakao/Naver OAuth start and callback flows; Worker-handled sign-out; internal `users` plus `user_identities`; internal-user-backed sessions; and browser-local recent-login provider hinting. The protected shell uses a shared header with theme selection plus a user menu, and `/app` is intentionally blank below the header. The standard verification gate is `npm run verify`, which runs format checking, linting, type checking, and build only.
+- Current stage: Blank protected app shell baseline.
+- Verified state: The app has a public `/` route; a protected `/app` route; a Worker boundary for `/auth/*`, `/auth/sign-out`, and `/api/session`; Google/Kakao/Naver OAuth start and callback flows; Worker-handled sign-out; internal `users` plus `user_identities`; internal-user-backed sessions; and browser-local recent-login provider hinting. The protected shell uses a shared header with theme selection plus a user menu, and `/app` is intentionally blank below the header.
+- Operating rule: The current app has no product feature mounted in the protected app body. New product features must be added only through an explicitly scoped cycle that defines the feature boundary, implementation location, validation, and documentation update.
+- Verification gate: `npm run verify` is the standard completion gate for cleanup and feature cycles. It runs format checking, linting, type checking, and build only.
 
 ## Completed work
 
@@ -180,4 +182,4 @@
 
 ## Next planned stage
 
-- Keep the current blank protected app shell and auth/session baseline stable until the next explicitly scoped product stage.
+- Add the first product feature only through a small vertical slice cycle. The next cycle must keep the current auth/session, protected shell, theme selection, sign-out, and blank `/app` baseline intact unless the user explicitly changes the baseline.
