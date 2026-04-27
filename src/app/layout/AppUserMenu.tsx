@@ -107,16 +107,6 @@ export default function AppUserMenu() {
           >
             Account
           </Link>
-          <Link
-            className="app-user-menu__item"
-            onClick={() => {
-              overlay.dismiss();
-            }}
-            role="menuitem"
-            to={APP_ROUTES.subscription}
-          >
-            Subscription
-          </Link>
           <div className="app-user-menu__sign-out" role="none">
             <SignOutForm className="app-user-menu__sign-out-form" />
           </div>

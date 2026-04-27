@@ -46,36 +46,23 @@ test("shell header and content surfaces are styled independently", () => {
   );
 });
 
-test("react query drives protected app server state and billing splits summary from history", () => {
+test("react query drives protected app account server state", () => {
   const packageJson = readRepoFile("package.json");
   const main = readRepoFile("src/main.tsx");
   const authSessionBootstrap = readRepoFile(
     "src/app/providers/AuthSessionBootstrap.tsx",
   );
-  const billingOverview = readRepoFile(
-    "src/features/billing/model/useBillingOverview.ts",
-  );
-  const billingQueries = readRepoFile(
-    "src/features/billing/model/billing-queries.ts",
-  );
-  const billingKeys = readRepoFile(
-    "src/features/billing/model/billing-query-keys.ts",
+  const accountQueries = readRepoFile(
+    "src/features/auth/model/account-queries.ts",
   );
 
   assert.equal(packageJson.includes("@tanstack/react-query"), true);
   assert.equal(main.includes("QueryClientProvider"), true);
   assert.equal(
-    authSessionBootstrap.includes("prefetchBillingSummaryQuery"),
+    authSessionBootstrap.includes("prefetchLinkedAccountProvidersQuery"),
     true,
   );
-  assert.equal(billingOverview.includes("useBillingSummaryQuery"), true);
-  assert.equal(billingOverview.includes("useBillingHistoryQuery"), true);
-  assert.equal(billingOverview.includes("fetchBillingSubscription()"), false);
-  assert.equal(billingOverview.includes("fetchBillingEntitlements()"), false);
-  assert.equal(billingQueries.includes("fetchBillingOverview"), true);
-  assert.equal(billingQueries.includes("fetchBillingHistory"), true);
-  assert.equal(billingKeys.includes('summary: ["billing", "summary"]'), true);
-  assert.equal(billingKeys.includes('history: ["billing", "history"]'), true);
+  assert.equal(accountQueries.includes("useLinkedAccountProvidersQuery"), true);
 });
 
 test("account linked providers follow the shared query-prefetch path", () => {
@@ -167,16 +154,4 @@ test("header controls use the compact theme selector variant and top-level shell
   assert.equal(layoutCss.includes("align-items: center;"), true);
   assert.equal(layoutCss.includes("flex-wrap: wrap;"), false);
   assert.equal(layoutCss.includes(".theme-selector__trigger--compact"), true);
-});
-
-test("billing dead exports are removed after the shared summary query migration", () => {
-  const billingApi = readRepoFile(
-    "src/features/billing/services/billing-api.ts",
-  );
-  const billingTypes = readRepoFile("src/features/billing/types/billing.ts");
-
-  assert.equal(billingApi.includes("fetchBillingSubscription"), false);
-  assert.equal(billingApi.includes("fetchBillingEntitlements"), false);
-  assert.equal(billingTypes.includes("BillingSubscriptionResponse"), false);
-  assert.equal(billingTypes.includes("BillingEntitlementsResponse"), false);
 });

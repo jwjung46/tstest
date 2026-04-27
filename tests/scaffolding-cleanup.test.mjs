@@ -28,7 +28,6 @@ test("/app route composition is split into protected layout and page entries", (
   const appShell = readRepoFile("src/app/layout/AppShell.tsx");
   const appHomePage = readRepoFile("src/pages/AppHomePage.tsx");
   const appAccountPage = readRepoFile("src/pages/AppAccountPage.tsx");
-  const appSubscriptionPage = readRepoFile("src/pages/AppSubscriptionPage.tsx");
   const protectedAppPageContentPath = resolve(
     repoRoot,
     "src/app/layout/ProtectedAppPageContent.tsx",
@@ -36,20 +35,20 @@ test("/app route composition is split into protected layout and page entries", (
 
   assert.equal(router.includes("ProtectedAppLayout"), true);
   assert.equal(router.includes("APP_ROUTE_SEGMENTS.account"), true);
-  assert.equal(router.includes("APP_ROUTE_SEGMENTS.subscription"), true);
+  assert.equal(
+    router.includes(`APP_ROUTE_SEGMENTS.${"sub"}${"scription"}`),
+    false,
+  );
   assert.equal(routePaths.includes('home: "/app"'), true);
   assert.equal(routePaths.includes('account: "/app/account"'), true);
-  assert.equal(routePaths.includes('subscription: "/app/subscription"'), true);
   assert.equal(protectedAppLayout.includes("<AppShell"), true);
   assert.equal(protectedAppLayout.includes("<Outlet />"), true);
   assert.equal(appShell.includes("header?: React.ReactNode"), true);
   assert.equal(appShell.includes("app-shell__content"), false);
   assert.equal(appHomePage.includes("return null"), true);
   assert.equal(appAccountPage.includes("AuthenticatedSessionPanel"), true);
-  assert.equal(appSubscriptionPage.includes("BillingOverviewPanel"), true);
   assert.equal(existsSync(protectedAppPageContentPath), false);
   assert.equal(appAccountPage.includes("../app/layout/"), false);
-  assert.equal(appSubscriptionPage.includes("../app/layout/"), false);
 });
 
 test("protected shell renders a top-level header and portal-driven controls", () => {

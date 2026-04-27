@@ -6,7 +6,6 @@ import {
   createSignOutResponse,
 } from "./oauth/session.ts";
 import { isOAuthProviderId } from "./oauth/providers.ts";
-import { handleBillingRequest } from "./billing/api.ts";
 
 function matchAuthRoute(pathname: string) {
   const match = pathname.match(/^\/auth\/([^/]+)\/(start|callback)$/);
@@ -30,12 +29,6 @@ function matchAuthRoute(pathname: string) {
 async function handleRequest(request: Request, env: WorkerEnv) {
   const url = new URL(request.url);
   const isSecureRequest = url.protocol === "https:";
-
-  const billingResponse = await handleBillingRequest(request, env);
-
-  if (billingResponse) {
-    return billingResponse;
-  }
 
   const accountResponse = await handleAccountRequest(request, env);
 

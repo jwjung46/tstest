@@ -2,8 +2,8 @@
 
 ## Current status
 
-- Current stage: Stage 2 Toss one-time payment integration completed on top of the existing account/auth baseline and the Stage 1 internal billing foundation, followed by the protected-app UI shell split.
-- Verified state: The app has a public `/` route; protected `/app`, `/app/account`, and `/app/subscription` routes; a Worker boundary for `/auth/*` and `/api/*`; Google/Kakao/Naver OAuth start and callback flows; signed sign-in vs link state handling; Worker-handled sign-out; internal `users` plus `user_identities`; internal-user-backed sessions; browser-local recent-login provider hinting; linked-provider lookup in the protected app area; merge foundations; and an internal-user-based Stage 2 Toss billing flow. Billing ownership is still internal-user-based only through `billing_customers.user_id`, not provider identity scoped, while Toss-facing `billing_customers.customer_key` is now a short deterministic internal-user-derived value safe for Toss limits. The billing domain includes `billing_customers`, `billing_payment_methods`, `subscription_plans`, `subscriptions`, `subscription_cycles`, `billing_events`, `entitlements`, and `manual_entitlement_overrides`, with real Toss HTTP access isolated behind `worker/src/billing/toss-client.ts`. Stage 2 webhook ingestion now derives delivery identity from Toss transmission headers, persists `billing_events` before reconciliation, dedupes by durable webhook event key, and marks accepted-but-unused deliveries as `ignored` instead of dropping them. The protected shell now uses a shared header with theme selection plus a user menu, `/app` is intentionally blank below the header, `/app/account` mounts the existing account/session surfaces, `/app/subscription` mounts the existing billing surface, account-linking returns resolve to `/app/account`, and Toss checkout success/fail returns resolve to `/app/subscription`. `pro_monthly` currently means a one-time 30-day paid access contract, not auto-renew. The standard verification gate is now `npm run verify`, which runs format checking, linting, type checking, and build only.
+- Current stage: Cleanup baseline after removing the previously active payment feature from the app, Worker, migrations, tests, and current-scope docs.
+- Verified state: The app has a public `/` route; protected `/app` and `/app/account` routes; a Worker boundary for `/auth/*` and `/api/*`; Google/Kakao/Naver OAuth start and callback flows; signed sign-in vs link state handling; Worker-handled sign-out; internal `users` plus `user_identities`; internal-user-backed sessions; browser-local recent-login provider hinting; linked-provider lookup in the protected app area; and merge foundations. The protected shell uses a shared header with theme selection plus a user menu, `/app` is intentionally blank below the header, `/app/account` mounts the existing account/session surfaces, and account-linking returns resolve to `/app/account`. The standard verification gate is `npm run verify`, which runs format checking, linting, type checking, and build only.
 
 ## Completed work
 
@@ -173,8 +173,7 @@
 
 - Durable session persistence beyond the current signed-cookie session boundary.
 - End-user merge wizard UI, unlink UI, automatic email-based linking, role systems, refresh-token rotation, or richer profile/settings flows.
-- Real recurring billing approval, billing-key lifecycle, authKey to billingKey confirmation, recurring charge scheduling, recurring cancel/resume semantics, or broader webhook source hardening beyond the current Toss payment delivery headers.
 
 ## Next planned stage
 
-- Extend the completed Stage 2 one-time payment flow into approved recurring billing only when billing-key registration, recurring charge scheduling, and recurring lifecycle semantics are allowed, while keeping billing ownership tied to the internal user and feature access driven by entitlements.
+- Keep the current auth/account shell baseline stable until the next explicitly scoped product stage.
