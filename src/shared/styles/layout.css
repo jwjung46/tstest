@@ -48,7 +48,6 @@
 
 .landing-login-card__brand,
 .app-shell__brand,
-.notes-pane__title,
 .linked-login-methods__title,
 .billing-panel__title {
   color: var(--theme-text-primary);

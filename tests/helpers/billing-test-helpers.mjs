@@ -25,7 +25,6 @@ function clone(value) {
 
 export function createBillingDbMock(initialState = {}) {
   const state = {
-    notes: [],
     users: [],
     userIdentities: [],
     billingCustomers: [],
@@ -46,83 +45,6 @@ export function createBillingDbMock(initialState = {}) {
     },
     async execute(mode, sql, values) {
       const normalized = sql.replace(/\s+/g, " ").trim();
-
-      if (
-        normalized.startsWith(
-          "SELECT id, user_id, title, content, created_at, updated_at FROM notes WHERE user_id = ? ORDER BY updated_at DESC",
-        )
-      ) {
-        const [userId] = values;
-        return state.notes
-          .filter((note) => note.user_id === userId)
-          .sort((left, right) =>
-            right.updated_at.localeCompare(left.updated_at),
-          )
-          .map((note) => ({ ...note }));
-      }
-
-      if (
-        normalized.startsWith(
-          "SELECT id, user_id, title, content, created_at, updated_at FROM notes WHERE id = ? AND user_id = ?",
-        )
-      ) {
-        const [id, userId] = values;
-        return (
-          state.notes.find(
-            (note) => note.id === id && note.user_id === userId,
-          ) ?? null
-        );
-      }
-
-      if (
-        normalized.startsWith(
-          "INSERT INTO notes (id, user_id, title, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-        )
-      ) {
-        const [id, user_id, title, content, created_at, updated_at] = values;
-        state.notes.push({
-          id,
-          user_id,
-          title,
-          content,
-          created_at,
-          updated_at,
-        });
-        return { success: true, meta: { changes: 1 } };
-      }
-
-      if (
-        normalized.startsWith(
-          "UPDATE notes SET title = ?, content = ?, updated_at = ? WHERE id = ? AND user_id = ?",
-        )
-      ) {
-        const [title, content, updated_at, id, userId] = values;
-        const note = state.notes.find(
-          (entry) => entry.id === id && entry.user_id === userId,
-        );
-        if (!note) {
-          return { success: true, meta: { changes: 0 } };
-        }
-
-        note.title = title;
-        note.content = content;
-        note.updated_at = updated_at;
-        return { success: true, meta: { changes: 1 } };
-      }
-
-      if (
-        normalized.startsWith("DELETE FROM notes WHERE id = ? AND user_id = ?")
-      ) {
-        const [id, userId] = values;
-        const before = state.notes.length;
-        state.notes = state.notes.filter(
-          (note) => !(note.id === id && note.user_id === userId),
-        );
-        return {
-          success: true,
-          meta: { changes: before - state.notes.length },
-        };
-      }
 
       if (
         normalized ===

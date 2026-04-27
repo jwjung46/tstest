@@ -1,6 +1,6 @@
 # tstest
 
-Cloudflare Worker auth/session boundary for an application with internal `users` + `user_identities`, provider linking, merge foundations, personal notes, and a Stage 2 Toss one-time payment integration built around internal-user billing ownership.
+Cloudflare Worker auth/session boundary for an application with internal `users` + `user_identities`, provider linking, merge foundations, and a Stage 2 Toss one-time payment integration built around internal-user billing ownership.
 
 ## Current Scope
 
@@ -20,16 +20,15 @@ Cloudflare Worker auth/session boundary for an application with internal `users`
 - `src/pages`: route entry points only
 - `src/features`: feature-owned UI, state, services, and validation
 - `src/platform`: shared API/session boundaries
-- `worker/src`: OAuth, session, account linking, billing, notes, and D1 integration
+- `worker/src`: OAuth, session, account linking, billing, and D1 integration
 
-Feature modules are composed through the protected app shell. Billing and notes stay inside `src/features/*`, and page components do not own billing or notes domain logic.
+Feature modules are composed through the protected app shell. Billing stays inside `src/features/*`, and page components do not own billing domain logic.
 
 ## Internal Account Model
 
 - `users` is the canonical app account table.
 - `user_identities` stores linked provider identities.
 - Session `user.id` is an internal user id, not a provider id.
-- `notes.user_id` means internal-user ownership.
 - Billing ownership is internal-user-based only through `billing_customers.user_id`.
 - Linking is explicit and only allowed while signed in.
 - Automatic email linking, unlink UI, and end-user merge UI are intentionally not shipped yet.
@@ -114,32 +113,8 @@ TOSS_PAYMENTS_ENVIRONMENT=test
 
 If the Toss client key or secret key is missing, checkout/session and confirm requests fail with a clear billing configuration error instead of silently starting a broken flow.
 
-## Notes Feature
-
-The notes module currently includes:
-
-- signed-in user scoped notes list
-- two-pane list/editor workspace
-- first-note auto-selection
-- manual save only
-- hard delete only
-- loading, empty, fetch-error, save-error, delete-error states
-
-The notes feature code still exists under `src/features/notes`, but it is not currently mounted in the default protected home UI.
-
-Not in scope yet:
-
-- search
-- tags
-- sharing/collaboration
-- attachments
-- rich text / markdown
-- separate note detail route
-- premium gating of notes through entitlements
-
 ## D1 Migrations
 
-- `worker/migrations/0001_notes.sql`
 - `worker/migrations/0002_account_linking.sql`
 - `worker/migrations/0003_billing_core.sql`
 - `worker/migrations/0004_billing_event_processing_ignored.sql`
@@ -161,7 +136,6 @@ npm run format
 npm run lint
 npm run typecheck
 npm run build
-node --test tests/auth-session.test.mjs tests/oauth-worker.test.mjs tests/notes-model.test.mjs tests/notes-worker.test.mjs
 ```
 
 ## Still Deferred

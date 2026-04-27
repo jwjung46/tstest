@@ -245,21 +245,3 @@ export async function deleteIdentityById(db: D1Database, identityId: string) {
     .bind(identityId)
     .run();
 }
-
-export async function reassignNotesToUser(
-  db: D1Database,
-  {
-    sourceUserId,
-    targetUserId,
-  }: {
-    sourceUserId: string;
-    targetUserId: string;
-  },
-) {
-  const result = await db
-    .prepare("UPDATE notes SET user_id = ? WHERE user_id = ?")
-    .bind(targetUserId, sourceUserId)
-    .run();
-
-  return result.meta.changes ?? 0;
-}

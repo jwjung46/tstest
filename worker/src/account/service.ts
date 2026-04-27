@@ -8,7 +8,6 @@ import {
   listIdentitiesByUserId,
   markUserMerged,
   moveIdentityToUser,
-  reassignNotesToUser,
   updateIdentityFromLogin,
   updateUserProfile,
 } from "./repository.ts";
@@ -259,11 +258,6 @@ export async function mergeUsers(
     movedIdentityCount += 1;
   }
 
-  const reassignedNoteCount = await reassignNotesToUser(db, {
-    sourceUserId,
-    targetUserId,
-  });
-
   const nextDisplayName =
     targetUser.display_name || sourceUser.display_name || "User";
   const nextPrimaryEmail = targetUser.primary_email ?? sourceUser.primary_email;
@@ -285,7 +279,6 @@ export async function mergeUsers(
     sourceUserId,
     targetUserId,
     movedIdentityCount,
-    reassignedNoteCount,
     skippedIdentityProviders,
   };
 }

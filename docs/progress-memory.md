@@ -2,8 +2,8 @@
 
 ## Current status
 
-- Current stage: Stage 2 Toss one-time payment integration completed on top of the existing Stage 9 notes/account/auth baseline and the Stage 1 internal billing foundation, followed by the protected-app UI shell split.
-- Verified state: The app has a public `/` route; protected `/app`, `/app/account`, and `/app/subscription` routes; a Worker boundary for `/auth/*` and `/api/*`; Google/Kakao/Naver OAuth start and callback flows; signed sign-in vs link state handling; Worker-handled sign-out; internal `users` plus `user_identities`; internal-user-backed sessions; browser-local recent-login provider hinting; linked-provider lookup in the protected app area; merge foundations; personal notes with internal-user D1 ownership; and an internal-user-based Stage 2 Toss billing flow. Billing ownership is still internal-user-based only through `billing_customers.user_id`, not provider identity scoped, while Toss-facing `billing_customers.customer_key` is now a short deterministic internal-user-derived value safe for Toss limits. The billing domain includes `billing_customers`, `billing_payment_methods`, `subscription_plans`, `subscriptions`, `subscription_cycles`, `billing_events`, `entitlements`, and `manual_entitlement_overrides`, with real Toss HTTP access isolated behind `worker/src/billing/toss-client.ts`. Stage 2 webhook ingestion now derives delivery identity from Toss transmission headers, persists `billing_events` before reconciliation, dedupes by durable webhook event key, and marks accepted-but-unused deliveries as `ignored` instead of dropping them. The protected shell now uses a shared header with theme selection plus a user menu, `/app` is intentionally blank below the header, `/app/account` mounts the existing account/session surfaces, `/app/subscription` mounts the existing billing surface, account-linking returns resolve to `/app/account`, and Toss checkout success/fail returns resolve to `/app/subscription`. `pro_monthly` currently means a one-time 30-day paid access contract, not auto-renew.
+- Current stage: Stage 2 Toss one-time payment integration completed on top of the existing account/auth baseline and the Stage 1 internal billing foundation, followed by the protected-app UI shell split.
+- Verified state: The app has a public `/` route; protected `/app`, `/app/account`, and `/app/subscription` routes; a Worker boundary for `/auth/*` and `/api/*`; Google/Kakao/Naver OAuth start and callback flows; signed sign-in vs link state handling; Worker-handled sign-out; internal `users` plus `user_identities`; internal-user-backed sessions; browser-local recent-login provider hinting; linked-provider lookup in the protected app area; merge foundations; and an internal-user-based Stage 2 Toss billing flow. Billing ownership is still internal-user-based only through `billing_customers.user_id`, not provider identity scoped, while Toss-facing `billing_customers.customer_key` is now a short deterministic internal-user-derived value safe for Toss limits. The billing domain includes `billing_customers`, `billing_payment_methods`, `subscription_plans`, `subscriptions`, `subscription_cycles`, `billing_events`, `entitlements`, and `manual_entitlement_overrides`, with real Toss HTTP access isolated behind `worker/src/billing/toss-client.ts`. Stage 2 webhook ingestion now derives delivery identity from Toss transmission headers, persists `billing_events` before reconciliation, dedupes by durable webhook event key, and marks accepted-but-unused deliveries as `ignored` instead of dropping them. The protected shell now uses a shared header with theme selection plus a user menu, `/app` is intentionally blank below the header, `/app/account` mounts the existing account/session surfaces, `/app/subscription` mounts the existing billing surface, account-linking returns resolve to `/app/account`, and Toss checkout success/fail returns resolve to `/app/subscription`. `pro_monthly` currently means a one-time 30-day paid access contract, not auto-renew.
 
 ## Completed work
 
@@ -110,17 +110,12 @@
 ### 21. Phase 7 and Phase 8 completion pass
 
 - What: Kept the Worker-based OAuth/session mechanics intact while moving protected-route composition into `app/router`, keeping auth-specific UI and auth-specific page interpretation inside `features/auth`, and reducing page-layer logic so `/` and `/app` act as composition entry points only.
-- Why: This locked the auth/session structure into stable route and feature boundaries before Stage 9 product module work began.
-
-### 22. Stage 9 personal notes feature
-
-- What: Added a D1-backed `notes` schema plus owner-scoped Worker CRUD endpoints under `/api/notes`, then implemented the first product module under `src/features/notes` with a two-pane list/editor workspace, manual save, hard delete, empty/loading/error states, and tests for pure notes logic plus Worker API behavior.
-- Why: This added the first protected product feature without breaking the existing auth/session boundary or pushing notes logic into page components.
+- Why: This locked the auth/session structure into stable route and feature boundaries.
 
 ### 23. Account linking and merge foundation
 
-- What: Replaced the effective provider-scoped account model with internal `users` plus `user_identities`, migrated `notes.user_id` semantics to internal users, routed OAuth callbacks through identity resolution, added explicit signed linking intent, exposed linked login methods in the protected auth area, recorded a recent-login provider hint for `/`, and added a real `mergeUsers(sourceUserId, targetUserId)` server foundation.
-- Why: This removes the structural limitation where each provider behaved like a separate app user, keeps notes continuity under one internal account, and makes future merge or unlink work additive instead of redesign-heavy.
+- What: Replaced the effective provider-scoped account model with internal `users` plus `user_identities`, routed OAuth callbacks through identity resolution, added explicit signed linking intent, exposed linked login methods in the protected auth area, recorded a recent-login provider hint for `/`, and added a real `mergeUsers(sourceUserId, targetUserId)` server foundation.
+- Why: This removes the structural limitation where each provider behaved like a separate app user and makes future merge or unlink work additive instead of redesign-heavy.
 
 ### 24. Account summary cleanup and linked-provider presentation
 
@@ -129,7 +124,7 @@
 
 ### 25. Reset-based account initialization cleanup
 
-- What: Rewrote the account-linking migration to create structure only, removed temporary canonical-profile uplift logic from runtime sign-in, kept first successful sign-in as the only normal canonical profile initialization path, and preserved notes ownership under internal user ids.
+- What: Rewrote the account-linking migration to create structure only, removed temporary canonical-profile uplift logic from runtime sign-in, and kept first successful sign-in as the only normal canonical profile initialization path.
 - Why: The project is still pre-launch and the database can be reset, so the supported path should be a clean internal-user model from the first successful sign-in instead of preserving temporary normalization branches.
 
 ### 26. Stage 1 Toss subscription foundation
@@ -174,7 +169,6 @@
 - Durable session persistence beyond the current signed-cookie session boundary.
 - End-user merge wizard UI, unlink UI, automatic email-based linking, role systems, refresh-token rotation, or richer profile/settings flows.
 - Real recurring billing approval, billing-key lifecycle, authKey to billingKey confirmation, recurring charge scheduling, recurring cancel/resume semantics, or broader webhook source hardening beyond the current Toss payment delivery headers.
-- Any later product expansion beyond the current notes plus billing foundation, such as search, sharing, tags, attachments, or separate note detail routes.
 
 ## Next planned stage
 

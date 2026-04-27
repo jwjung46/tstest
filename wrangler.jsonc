@@ -11,7 +11,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "tstest-notes",
+      "database_name": "tstest-app",
       "database_id": "9663b620-3cb3-41c3-984b-64c935fe604c",
       "migrations_dir": "worker/migrations",
     },

@@ -15,7 +15,7 @@ test("billing overview keeps the summary primary while the history query is stil
         name: "Pro Monthly",
       },
     },
-    entitlements: [{ featureKey: "notes.pro" }],
+    entitlements: [{ featureKey: "app.pro" }],
     availablePlans: [{ id: "plan-1" }],
     cycles: [],
     events: [],

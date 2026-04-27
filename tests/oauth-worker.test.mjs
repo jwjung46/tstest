@@ -42,7 +42,6 @@ function createDbMock() {
   const state = {
     users: [],
     userIdentities: [],
-    notes: [],
   };
 
   return {
@@ -224,18 +223,6 @@ function createDbMock() {
           success: true,
           meta: { changes: before - state.userIdentities.length },
         };
-      }
-
-      if (normalized === "UPDATE notes SET user_id = ? WHERE user_id = ?") {
-        const [targetUserId, sourceUserId] = values;
-        let changes = 0;
-        for (const note of state.notes) {
-          if (note.user_id === sourceUserId) {
-            note.user_id = targetUserId;
-            changes += 1;
-          }
-        }
-        return { success: true, meta: { changes } };
       }
 
       throw new Error(`Unhandled SQL in test double: ${normalized} (${mode})`);
@@ -1072,7 +1059,7 @@ test("link callback attaches a new provider to the existing internal user", asyn
   }
 });
 
-test("mergeUsers reassigns notes, reconciles identities, and marks the source user as merged", async () => {
+test("mergeUsers reconciles identities and marks the source user as merged", async () => {
   const db = createDbMock();
   db.state.users.push(
     {
@@ -1129,17 +1116,6 @@ test("mergeUsers reassigns notes, reconciles identities, and marks the source us
       last_login_at: "2026-04-17T09:02:00.000Z",
     },
   );
-  db.state.notes.push(
-    {
-      id: "note-1",
-      user_id: "user-source",
-    },
-    {
-      id: "note-2",
-      user_id: "user-source",
-    },
-  );
-
   const result = await mergeUsers(db, {
     sourceUserId: "user-source",
     targetUserId: "user-target",
@@ -1151,13 +1127,8 @@ test("mergeUsers reassigns notes, reconciles identities, and marks the source us
     sourceUserId: "user-source",
     targetUserId: "user-target",
     movedIdentityCount: 1,
-    reassignedNoteCount: 2,
     skippedIdentityProviders: ["google"],
   });
-  assert.equal(
-    db.state.notes.every((note) => note.user_id === "user-target"),
-    true,
-  );
   assert.equal(
     db.state.users.find((user) => user.id === "user-source")?.status,
     "merged",

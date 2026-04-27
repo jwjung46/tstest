@@ -9,8 +9,8 @@ import {
 import type { Entitlement } from "./types.ts";
 
 const PLAN_FEATURES: Record<string, string[]> = {
-  free: ["notes.basic"],
-  pro_monthly: ["notes.basic", "notes.premium"],
+  free: ["app.basic"],
+  pro_monthly: ["app.basic", "app.pro"],
 };
 
 const ACCESS_GRANTING_STATUSES = new Set([

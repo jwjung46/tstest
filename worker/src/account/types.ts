@@ -57,6 +57,5 @@ export type MergeUsersResult = {
   sourceUserId: string;
   targetUserId: string;
   movedIdentityCount: number;
-  reassignedNoteCount: number;
   skippedIdentityProviders: OAuthProviderId[];
 };

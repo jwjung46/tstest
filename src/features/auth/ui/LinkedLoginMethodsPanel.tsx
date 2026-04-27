@@ -67,13 +67,13 @@ export function LinkedProviderCard({
       <div className="linked-provider-card__actions">
         {card.cta.kind === "link" ? (
           <a
-            className="notes-button notes-button--primary"
+            className="action-button action-button--primary"
             href={card.cta.href}
           >
             {card.cta.label}
           </a>
         ) : (
-          <button className="notes-button" type="button" disabled>
+          <button className="action-button" type="button" disabled>
             {card.cta.label}
           </button>
         )}
@@ -109,19 +109,18 @@ export default function LinkedLoginMethodsPanel() {
           <h2 className="linked-login-methods__title">Linked login methods</h2>
         </div>
         <p className="hint">
-          Keep one account and one notes workspace while adding extra sign-in
-          providers.
+          Keep one account while adding extra sign-in providers.
         </p>
       </div>
 
       {feedback ? (
-        <p className="notes-feedback" role="status">
+        <p className="feature-feedback" role="status">
           {feedback}
         </p>
       ) : null}
 
       {linkedProvidersQuery.isError ? (
-        <p className="notes-feedback notes-feedback--error" role="alert">
+        <p className="feature-feedback feature-feedback--error" role="alert">
           {errorMessage}
         </p>
       ) : null}

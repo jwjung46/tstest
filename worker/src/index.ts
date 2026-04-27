@@ -6,7 +6,6 @@ import {
   createSignOutResponse,
 } from "./oauth/session.ts";
 import { isOAuthProviderId } from "./oauth/providers.ts";
-import { handleNotesRequest } from "./notes/api.ts";
 import { handleBillingRequest } from "./billing/api.ts";
 
 function matchAuthRoute(pathname: string) {
@@ -31,12 +30,6 @@ function matchAuthRoute(pathname: string) {
 async function handleRequest(request: Request, env: WorkerEnv) {
   const url = new URL(request.url);
   const isSecureRequest = url.protocol === "https:";
-
-  const notesResponse = await handleNotesRequest(request, env);
-
-  if (notesResponse) {
-    return notesResponse;
-  }
 
   const billingResponse = await handleBillingRequest(request, env);
 

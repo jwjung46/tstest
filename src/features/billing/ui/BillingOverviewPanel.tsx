@@ -224,7 +224,7 @@ export default function BillingOverviewPanel() {
                       <strong>{formatPrice(plan.currency, plan.amount)}</strong>
                       {isPaidPlan ? (
                         <button
-                          className="notes-button notes-button--primary"
+                          className="action-button action-button--primary"
                           disabled={isBusy}
                           onClick={() => {
                             void billing.startCheckout(plan.planCode);
@@ -238,7 +238,11 @@ export default function BillingOverviewPanel() {
                               : "Pay with Toss"}
                         </button>
                       ) : (
-                        <button className="notes-button" disabled type="button">
+                        <button
+                          className="action-button"
+                          disabled
+                          type="button"
+                        >
                           Included
                         </button>
                       )}
