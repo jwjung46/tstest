@@ -1,6 +1,4 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import EmptyState from "../../shared/ui/EmptyState";
-import PageContainer from "../../shared/ui/PageContainer";
 import {
   buildAuthRedirectTarget,
   requireAuth,
@@ -13,15 +11,7 @@ export default function ProtectedRoute() {
   const authRequirement = requireAuth(authState);
 
   if (!authRequirement.allowed && authRequirement.reason === "loading") {
-    return (
-      <PageContainer className="page-container--landing">
-        <EmptyState
-          eyebrow="Checking Session"
-          title="Checking access"
-          description="Authentication state is being resolved before entering the protected app area."
-        />
-      </PageContainer>
-    );
+    return <div className="protected-route-placeholder" aria-hidden="true" />;
   }
 
   if (

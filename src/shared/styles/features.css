@@ -104,9 +104,31 @@
   line-height: 1;
 }
 
+.work-items-panel__body,
 .work-items-list {
   display: grid;
   gap: var(--space-4);
+}
+
+.work-items-panel__status,
+.work-items-panel__message {
+  padding: var(--space-5);
+  border: 1px solid var(--theme-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--theme-surface-panel-soft);
+}
+
+.work-items-panel__status {
+  color: var(--theme-text-secondary);
+}
+
+.work-items-panel__message {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.work-items-panel__message-title {
+  font-weight: 700;
 }
 
 .work-item-card {

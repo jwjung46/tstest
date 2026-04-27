@@ -7,7 +7,6 @@ import {
 } from "../model/auth.ts";
 import { useAuthState } from "../model/useAuthState.ts";
 import OAuthLoginActions from "./OAuthLoginActions.tsx";
-import EmptyState from "../../../shared/ui/EmptyState.tsx";
 import PageContainer from "../../../shared/ui/PageContainer.tsx";
 
 export default function PublicAuthEntry() {
@@ -31,15 +30,7 @@ export default function PublicAuthEntry() {
   }
 
   if (homeRouteBehavior.kind === "pending") {
-    return (
-      <PageContainer className="page-container--landing">
-        <EmptyState
-          eyebrow="Checking Session"
-          title="Checking your session"
-          description="The current signed-in state is being confirmed before the public entry is shown."
-        />
-      </PageContainer>
-    );
+    return <div className="public-auth-placeholder" aria-hidden="true" />;
   }
 
   return (

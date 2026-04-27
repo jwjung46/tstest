@@ -212,6 +212,12 @@ For work-items, the panel heading should remain “업무 목록” while the pa
 - Why: This introduces the first real product domain while preserving the existing public route, protected shell, OAuth/session/sign-out behavior, theme selector, and user menu.
 - Scope note: Creation, files, AI, logs, acknowledgement badges, result upload, and status transitions remain out of scope.
 
+### 34. Initial app loading UX stabilization
+
+- What: Stabilized the initial app loading UX for the current work-items list slice. Protected route auth loading no longer shows a large "Checking access" screen, and `WorkItemList` keeps the "업무 목록" heading stable across loading, empty, error, and list states.
+- Why: Initial protected app entry should not show multiple large loading screens in sequence; only the panel body should change while work items load or fail.
+- Scope note: No new product behavior was added.
+
 ## Decisions fixed so far
 
 - Language: TypeScript.
