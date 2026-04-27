@@ -39,6 +39,16 @@ Out of scope for the first work-item implementation slice:
 - result file upload
 - status transition UI beyond displaying the current status
 
+## UI behavior rules
+
+Initial app entry must not show multiple large loading screens in sequence.
+
+Authentication bootstrapping is an internal app readiness step. It should not render a large user-facing “checking access” style page unless the app cannot continue.
+
+Feature panels should keep their main heading and layout stable across loading, empty, error, and success states. Loading state should appear inside the panel body as a small inline status or skeleton, not as a replacement page title.
+
+For work-items, the panel heading should remain “업무 목록” while the panel body changes between loading, empty, error, and list states.
+
 ## Completed work
 
 ### 1. Git repository
