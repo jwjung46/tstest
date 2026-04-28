@@ -5,6 +5,8 @@ export type WorkItemsResponse = {
   workItems: WorkItem[];
 };
 
+export type CreateWorkItemRequest = CreateWorkItemInput;
+
 export type CreateWorkItemResponse = {
   workItem: WorkItem;
 };
@@ -16,7 +18,7 @@ export async function listWorkItems(): Promise<WorkItem[]> {
 }
 
 export async function createWorkItem(
-  input: CreateWorkItemInput,
+  input: CreateWorkItemRequest,
 ): Promise<WorkItem> {
   const response = await requestJson<CreateWorkItemResponse>(
     "/api/work-items",

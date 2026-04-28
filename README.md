@@ -10,7 +10,7 @@ Cloudflare Worker auth/session boundary for an application with internal `users`
 - Auth providers: Google, Kakao, Naver
 - Canonical account model: internal user + provider identities
 - Current protected shell:
-  - `/app`: protected work item list in the shell body
+  - `/app`: protected work item list plus in-panel work item creation UI in the shell body
   - shared header overlays use body-level fixed portal popovers to avoid stacking conflicts with the shell panels
 
 ## Architecture

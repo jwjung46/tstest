@@ -2,8 +2,8 @@
 
 ## Current status
 
-- Current stage: Cycle 2 WorkItem creation API foundation.
-- Verified state: The app has a public `/` route; a protected `/app` route; a Worker boundary for `/auth/*`, `/auth/sign-out`, `/api/session`, `GET /api/work-items`, and `POST /api/work-items`; Google/Kakao/Naver OAuth start and callback flows; Worker-handled sign-out; internal `users` plus `user_identities`; internal-user-backed sessions; and browser-local recent-login provider hinting. The protected shell uses a shared header with theme selection plus a user menu, and `/app` mounts the work item list feature in the protected body.
+- Current stage: Cycle 3 WorkItem creation UI.
+- Verified state: The app has a public `/` route; a protected `/app` route; a Worker boundary for `/auth/*`, `/auth/sign-out`, `/api/session`, `GET /api/work-items`, and `POST /api/work-items`; Google/Kakao/Naver OAuth start and callback flows; Worker-handled sign-out; internal `users` plus `user_identities`; internal-user-backed sessions; and browser-local recent-login provider hinting. The protected shell uses a shared header with theme selection plus a user menu, and `/app` mounts the work item list plus in-panel work item creation feature in the protected body.
 - Operating rule: The current app has only the first work-items list feature mounted in the protected app body. New product behavior must be added only through an explicitly scoped cycle that defines the feature boundary, implementation location, validation, and documentation update.
 - Verification gate: `npm run verify` is the standard completion gate for cleanup and feature cycles. It runs format checking, linting, type checking, automated tests, and build.
 
@@ -233,6 +233,15 @@ For work-items, the panel heading should remain “업무 목록” while the pa
 - Scope note: No product behavior, WorkItem API contract, UI, auth/session, database schema, or Worker routing behavior was changed.
 - Verification: `npm run test` and `npm run verify` passed on 2026-04-28.
 
+### 37. Cycle 3 WorkItem creation UI
+
+- What: Added a feature-owned WorkItem creation form inside `src/features/work-items/ui/WorkItemList.tsx`, expanded the frontend work-items API contract with explicit creation request/response types, added client-side minimum validation, disabled duplicate submits while the mutation is pending, reset the form on success, and invalidated the existing `["work-items"]` query so the list refreshes without a page reload.
+- Why: The CRUD baseline cannot move to detail or edit cycles until signed-in users can actually create WorkItems from the current protected `/app` surface using the already-shipped `POST /api/work-items` Worker API.
+- Included scope: `/app` in-panel creation UI only; title, description, type, and assignee user id inputs; inline loading/error/success feedback; React Query mutation wiring; list refresh after successful creation; stable list panel heading and body layout.
+- Excluded scope: new routes, detail UI, edit UI, delete, status transitions, files, AI, logs, acknowledgement badges, requester search/invite UX, and any `window.location.reload()` flow.
+- Verification: `npm run verify` passed on 2026-04-28. The node-based work-items tests now also assert that the creation form and mutation live inside the feature module while the stable list heading contract remains intact.
+- Why the next cycle can start: Cycle 3 now leaves the existing auth/session shell intact, keeps page composition thin, keeps fetch logic in the feature service layer, and provides a working creation path that the next incomplete cycle can build on for single-item detail retrieval.
+
 ## Decisions fixed so far
 
 - Language: TypeScript.
@@ -251,4 +260,4 @@ For work-items, the panel heading should remain “업무 목록” while the pa
 
 ## Next planned stage
 
-- Add the next work-items behavior only through a small vertical slice cycle. The next cycle must keep the current auth/session, protected shell, theme selection, sign-out, and work item list baseline intact unless the user explicitly changes the baseline.
+- Add Cycle 4 only through a small vertical slice cycle: keep the current auth/session, protected shell, theme selection, sign-out, work item list, and WorkItem creation UI intact while adding a Worker-owned single-item detail API at `GET /api/work-items/:id`.

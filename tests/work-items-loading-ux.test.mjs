@@ -28,7 +28,7 @@ test("work item list keeps one stable panel heading across data states", () => {
     "src/features/work-items/ui/WorkItemList.tsx",
   );
 
-  assert.equal(workItemList.includes(`업무를 ${"불러오는"} 중`), false);
+  assert.equal(workItemList.includes("업무를 불러오는 중"), false);
   assert.equal(workItemList.includes("업무 목록"), true);
   assert.equal(workItemList.includes("work-items-panel__body"), true);
   assert.equal(workItemList.includes("aria-busy="), true);
@@ -38,4 +38,20 @@ test("work item list keeps one stable panel heading across data states", () => {
     workItemList,
     /<section[\s\S]*className="work-items-panel"[\s\S]*<h1 className="work-items-panel__title">업무 목록<\/h1>[\s\S]*workItemsQuery\.isPending/,
   );
+});
+
+test("work item list owns the create form and create mutation inside the feature", () => {
+  const workItemList = readRepoFile(
+    "src/features/work-items/ui/WorkItemList.tsx",
+  );
+
+  assert.equal(workItemList.includes("useMutation"), true);
+  assert.equal(workItemList.includes("useQueryClient"), true);
+  assert.equal(workItemList.includes("createWorkItem"), true);
+  assert.equal(workItemList.includes('name="title"'), true);
+  assert.equal(workItemList.includes('name="description"'), true);
+  assert.equal(workItemList.includes('name="type"'), true);
+  assert.equal(workItemList.includes('name="assigneeUserId"'), true);
+  assert.equal(workItemList.includes("work-items-create-form"), true);
+  assert.equal(workItemList.includes("window.location.reload"), false);
 });
