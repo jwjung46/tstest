@@ -15,7 +15,7 @@ test("public auth entry stays minimal and auth-focused", () => {
   assert.equal(file.includes("landing-login-card"), true);
   assert.equal(file.includes("OAuthLoginActions"), true);
   assert.equal(file.includes("landing-login-card__title"), true);
-  assert.equal(file.includes("Sign in"), true);
+  assert.equal(file.includes("우리 원영이네"), true);
   assert.equal(file.includes("Recent login:"), true);
 });
 
