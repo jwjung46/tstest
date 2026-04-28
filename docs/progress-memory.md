@@ -226,6 +226,13 @@ For work-items, the panel heading should remain “업무 목록” while the pa
 - Scope note: Creation UI, files, AI, logs, acknowledgement badges, result upload, status transition UI, detail views, and edit views remain out of scope.
 - Verification: `npm run verify` passed on 2026-04-28.
 
+### 36. Worker API test gate wiring
+
+- What: Added `test:worker` and `test` package scripts and included `npm run test` in the standard `npm run verify` gate.
+- Why: Existing Worker API tests should run automatically during the normal verification path instead of remaining manual-only checks.
+- Scope note: No product behavior, WorkItem API contract, UI, auth/session, database schema, or Worker routing behavior was changed.
+- Verification: `npm run test` and `npm run verify` passed on 2026-04-28.
+
 ## Decisions fixed so far
 
 - Language: TypeScript.

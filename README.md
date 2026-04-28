@@ -60,12 +60,13 @@ npm run dev:cf
 ## Validation
 
 ```bash
+npm run test
 npm run verify
 ```
 
+`npm run test` runs the current automated test suite.
 `npm run verify` is the standard completion gate for cleanup and feature cycles.
-It runs `format:check`, `lint`, `typecheck`, and `build`. Tests are not part of
-the gate yet.
+It runs `format:check`, `lint`, `typecheck`, `test`, and `build`.
 
 ## Still Deferred
 
