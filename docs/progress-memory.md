@@ -5,7 +5,7 @@
 - Current stage: Cycle 2 WorkItem creation API foundation.
 - Verified state: The app has a public `/` route; a protected `/app` route; a Worker boundary for `/auth/*`, `/auth/sign-out`, `/api/session`, `GET /api/work-items`, and `POST /api/work-items`; Google/Kakao/Naver OAuth start and callback flows; Worker-handled sign-out; internal `users` plus `user_identities`; internal-user-backed sessions; and browser-local recent-login provider hinting. The protected shell uses a shared header with theme selection plus a user menu, and `/app` mounts the work item list feature in the protected body.
 - Operating rule: The current app has only the first work-items list feature mounted in the protected app body. New product behavior must be added only through an explicitly scoped cycle that defines the feature boundary, implementation location, validation, and documentation update.
-- Verification gate: `npm run verify` is the standard completion gate for cleanup and feature cycles. It runs format checking, linting, type checking, and build only.
+- Verification gate: `npm run verify` is the standard completion gate for cleanup and feature cycles. It runs format checking, linting, type checking, automated tests, and build.
 
 ## Next product domain
 
@@ -228,7 +228,7 @@ For work-items, the panel heading should remain “업무 목록” while the pa
 
 ### 36. Worker API test gate wiring
 
-- What: Added `test:worker` and `test` package scripts and included `npm run test` in the standard `npm run verify` gate.
+- What: Added Node-based automated test scripts and included `npm run test` in the standard `npm run verify` gate.
 - Why: Existing Worker API tests should run automatically during the normal verification path instead of remaining manual-only checks.
 - Scope note: No product behavior, WorkItem API contract, UI, auth/session, database schema, or Worker routing behavior was changed.
 - Verification: `npm run test` and `npm run verify` passed on 2026-04-28.

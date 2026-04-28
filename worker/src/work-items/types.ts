@@ -1,7 +1,10 @@
-export type WorkItemType =
-  | "oa_response"
-  | "prior_art_search"
-  | "translation_review";
+export const WORK_ITEM_TYPES = [
+  "oa_response",
+  "prior_art_search",
+  "translation_review",
+] as const;
+
+export type WorkItemType = (typeof WORK_ITEM_TYPES)[number];
 
 export type WorkItemStatus = "processing" | "completed" | "reported" | "closed";
 

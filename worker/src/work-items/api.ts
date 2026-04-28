@@ -1,7 +1,11 @@
 import type { WorkerEnv } from "../env.ts";
 import { readSessionFromRequest } from "../oauth/session.ts";
 import { createWorkItem, listVisibleWorkItems } from "./service.ts";
-import type { CreateWorkItemInput, WorkItemType } from "./types.ts";
+import {
+  WORK_ITEM_TYPES,
+  type CreateWorkItemInput,
+  type WorkItemType,
+} from "./types.ts";
 
 function jsonError(status: number, code: string, message: string) {
   return Response.json(
@@ -20,11 +24,7 @@ function jsonError(status: number, code: string, message: string) {
   );
 }
 
-const WORK_ITEM_TYPES = new Set<WorkItemType>([
-  "oa_response",
-  "prior_art_search",
-  "translation_review",
-]);
+const WORK_ITEM_TYPE_SET = new Set<WorkItemType>(WORK_ITEM_TYPES);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -93,7 +93,7 @@ async function parseCreateWorkItemInput(
     !title ||
     !description ||
     typeof type !== "string" ||
-    !WORK_ITEM_TYPES.has(type as WorkItemType) ||
+    !WORK_ITEM_TYPE_SET.has(type as WorkItemType) ||
     !assigneeUserId
   ) {
     return {
