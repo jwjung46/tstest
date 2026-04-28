@@ -2,8 +2,8 @@
 
 ## Current status
 
-- Current stage: Cycle 1 work-items list slice.
-- Verified state: The app has a public `/` route; a protected `/app` route; a Worker boundary for `/auth/*`, `/auth/sign-out`, `/api/session`, and `GET /api/work-items`; Google/Kakao/Naver OAuth start and callback flows; Worker-handled sign-out; internal `users` plus `user_identities`; internal-user-backed sessions; and browser-local recent-login provider hinting. The protected shell uses a shared header with theme selection plus a user menu, and `/app` mounts the work item list feature in the protected body.
+- Current stage: Cycle 2 WorkItem creation API foundation.
+- Verified state: The app has a public `/` route; a protected `/app` route; a Worker boundary for `/auth/*`, `/auth/sign-out`, `/api/session`, `GET /api/work-items`, and `POST /api/work-items`; Google/Kakao/Naver OAuth start and callback flows; Worker-handled sign-out; internal `users` plus `user_identities`; internal-user-backed sessions; and browser-local recent-login provider hinting. The protected shell uses a shared header with theme selection plus a user menu, and `/app` mounts the work item list feature in the protected body.
 - Operating rule: The current app has only the first work-items list feature mounted in the protected app body. New product behavior must be added only through an explicitly scoped cycle that defines the feature boundary, implementation location, validation, and documentation update.
 - Verification gate: `npm run verify` is the standard completion gate for cleanup and feature cycles. It runs format checking, linting, type checking, and build only.
 
@@ -217,6 +217,14 @@ For work-items, the panel heading should remain “업무 목록” while the pa
 - What: Stabilized the initial app loading UX for the current work-items list slice. Protected route auth loading no longer shows a large "Checking access" screen, and `WorkItemList` keeps the "업무 목록" heading stable across loading, empty, error, and list states.
 - Why: Initial protected app entry should not show multiple large loading screens in sequence; only the panel body should change while work items load or fail.
 - Scope note: No new product behavior was added.
+
+### 35. Cycle 2 WorkItem creation API foundation
+
+- What: Added `POST /api/work-items` for signed-in users, including request-body validation, D1 insert, and response mapping through the existing WorkItem DTO shape.
+- Why: A requester can now create a durable WorkItem through the Worker API while keeping requester ownership tied to the current session user.
+- Contract note: New WorkItems are always stored with `status = processing`; `requesterUserId` and `status` values in the request body are ignored.
+- Scope note: Creation UI, files, AI, logs, acknowledgement badges, result upload, status transition UI, detail views, and edit views remain out of scope.
+- Verification: `npm run verify` passed on 2026-04-28.
 
 ## Decisions fixed so far
 

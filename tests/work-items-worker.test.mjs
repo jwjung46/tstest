@@ -12,6 +12,10 @@ function createStatementMock(db, sql) {
       statement.bound = values;
       return statement;
     },
+    run: async () => {
+      await db.execute("run", sql, statement.bound);
+      return { success: true };
+    },
     all: async () => {
       const rows = await db.execute("all", sql, statement.bound);
       return { results: rows };
@@ -50,6 +54,35 @@ function createDbMock(workItems = []) {
             return createdAtOrder || left.id.localeCompare(right.id);
           })
           .map((workItem) => ({ ...workItem }));
+      }
+
+      if (
+        normalized ===
+        "INSERT INTO work_items (id, title, description, type, status, requester_user_id, assignee_user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      ) {
+        const [
+          id,
+          title,
+          description,
+          type,
+          status,
+          requesterUserId,
+          assigneeUserId,
+          createdAt,
+          updatedAt,
+        ] = values;
+        this.state.workItems.push({
+          id,
+          title,
+          description,
+          type,
+          status,
+          requester_user_id: requesterUserId,
+          assignee_user_id: assigneeUserId,
+          created_at: createdAt,
+          updated_at: updatedAt,
+        });
+        return [];
       }
 
       throw new Error(`Unhandled SQL in test double: ${normalized} (${mode})`);
@@ -92,6 +125,17 @@ async function createSignedSessionCookie(env, userId) {
   );
 
   return cookie.split(";").at(0);
+}
+
+function createWorkItemRequest(body, sessionCookie) {
+  return new Request("https://example.com/api/work-items", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      ...(sessionCookie ? { cookie: sessionCookie } : {}),
+    },
+    body: JSON.stringify(body),
+  });
 }
 
 test("GET /api/work-items returns 401 without a signed-in session", async () => {
@@ -184,5 +228,189 @@ test("GET /api/work-items returns only requester or assignee work items", async 
         updatedAt: "2026-04-28T01:10:00.000Z",
       },
     ],
+  });
+});
+
+test("POST /api/work-items returns 401 without a signed-in session", async () => {
+  const response = await worker.fetch(
+    createWorkItemRequest(
+      {
+        title: "Draft OA response",
+        description: "Prepare office action response.",
+        type: "oa_response",
+        assigneeUserId: "user-worker",
+      },
+      null,
+    ),
+    createEnv(),
+    createExecutionContext(),
+  );
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), {
+    error: {
+      code: "unauthorized",
+      message: "Sign in is required.",
+    },
+  });
+});
+
+test("POST /api/work-items creates a processing work item for the session requester", async () => {
+  const env = createEnv();
+  const sessionCookie = await createSignedSessionCookie(env, "user-requester");
+
+  const response = await worker.fetch(
+    createWorkItemRequest(
+      {
+        title: "  Draft OA response  ",
+        description: "  Prepare office action response.  ",
+        type: "oa_response",
+        assigneeUserId: "  user-worker  ",
+        requesterUserId: "user-spoofed",
+        status: "requested",
+      },
+      sessionCookie,
+    ),
+    env,
+    createExecutionContext(),
+  );
+
+  assert.equal(response.status, 200);
+  const payload = await response.json();
+
+  assert.equal(payload.workItem.title, "Draft OA response");
+  assert.equal(payload.workItem.description, "Prepare office action response.");
+  assert.equal(payload.workItem.type, "oa_response");
+  assert.equal(payload.workItem.status, "processing");
+  assert.equal(payload.workItem.requesterUserId, "user-requester");
+  assert.equal(payload.workItem.assigneeUserId, "user-worker");
+  assert.equal(typeof payload.workItem.id, "string");
+  assert.notEqual(payload.workItem.id, "");
+  assert.equal(payload.workItem.createdAt, payload.workItem.updatedAt);
+
+  const listResponse = await worker.fetch(
+    new Request("https://example.com/api/work-items", {
+      headers: {
+        cookie: sessionCookie,
+      },
+    }),
+    env,
+    createExecutionContext(),
+  );
+
+  assert.equal(listResponse.status, 200);
+  assert.deepEqual(await listResponse.json(), {
+    workItems: [payload.workItem],
+  });
+});
+
+test("POST /api/work-items rejects invalid type", async () => {
+  const env = createEnv();
+  const sessionCookie = await createSignedSessionCookie(env, "user-requester");
+
+  const response = await worker.fetch(
+    createWorkItemRequest(
+      {
+        title: "Prior art search",
+        description: "Prepare search report.",
+        type: "requested",
+        assigneeUserId: "user-worker",
+      },
+      sessionCookie,
+    ),
+    env,
+    createExecutionContext(),
+  );
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), {
+    error: {
+      code: "invalid_work_item_input",
+      message: "Work item input is invalid.",
+    },
+  });
+});
+
+test("POST /api/work-items rejects blank required strings", async () => {
+  const env = createEnv();
+  const sessionCookie = await createSignedSessionCookie(env, "user-requester");
+
+  for (const body of [
+    {
+      title: " ",
+      description: "Prepare search report.",
+      type: "prior_art_search",
+      assigneeUserId: "user-worker",
+    },
+    {
+      title: "Prior art search",
+      description: " ",
+      type: "prior_art_search",
+      assigneeUserId: "user-worker",
+    },
+    {
+      title: "Prior art search",
+      description: "Prepare search report.",
+      type: "prior_art_search",
+      assigneeUserId: " ",
+    },
+  ]) {
+    const response = await worker.fetch(
+      createWorkItemRequest(body, sessionCookie),
+      env,
+      createExecutionContext(),
+    );
+
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), {
+      error: {
+        code: "invalid_work_item_input",
+        message: "Work item input is invalid.",
+      },
+    });
+  }
+});
+
+test("POST /api/work-items rejects invalid JSON", async () => {
+  const env = createEnv();
+  const sessionCookie = await createSignedSessionCookie(env, "user-requester");
+
+  const response = await worker.fetch(
+    new Request("https://example.com/api/work-items", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie: sessionCookie,
+      },
+      body: "{",
+    }),
+    env,
+    createExecutionContext(),
+  );
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), {
+    error: {
+      code: "invalid_json",
+      message: "Request body must be valid JSON.",
+    },
+  });
+});
+
+test("unsupported /api/work-items methods return 405", async () => {
+  const response = await worker.fetch(
+    new Request("https://example.com/api/work-items", {
+      method: "PUT",
+    }),
+    createEnv(),
+    createExecutionContext(),
+  );
+
+  assert.equal(response.status, 405);
+  assert.deepEqual(await response.json(), {
+    error: {
+      code: "method_not_allowed",
+      message: "Method not allowed.",
+    },
   });
 });

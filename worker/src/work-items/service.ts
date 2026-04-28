@@ -1,5 +1,9 @@
-import { listWorkItemsForUser } from "./repository.ts";
-import type { WorkItemDto, WorkItemRecord } from "./types.ts";
+import { createWorkItemRecord, listWorkItemsForUser } from "./repository.ts";
+import type {
+  CreateWorkItemInput,
+  WorkItemDto,
+  WorkItemRecord,
+} from "./types.ts";
 
 function toWorkItemDto(record: WorkItemRecord): WorkItemDto {
   return {
@@ -19,4 +23,19 @@ export async function listVisibleWorkItems(db: D1Database, userId: string) {
   const workItems = await listWorkItemsForUser(db, userId);
 
   return workItems.map(toWorkItemDto);
+}
+
+export async function createWorkItem(
+  db: D1Database,
+  requesterUserId: string,
+  input: CreateWorkItemInput,
+) {
+  const now = new Date().toISOString();
+  const workItem = await createWorkItemRecord(db, {
+    ...input,
+    requesterUserId,
+    now,
+  });
+
+  return toWorkItemDto(workItem);
 }

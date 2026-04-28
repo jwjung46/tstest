@@ -17,6 +17,15 @@ export type WorkItemRecord = {
   updated_at: string;
 };
 
+export type CreateWorkItemRecordInput = {
+  title: string;
+  description: string;
+  type: WorkItemType;
+  requesterUserId: string;
+  assigneeUserId: string;
+  now: string;
+};
+
 export type WorkItemDto = {
   id: string;
   title: string;
@@ -27,4 +36,11 @@ export type WorkItemDto = {
   assigneeUserId: string;
   createdAt: string;
   updatedAt: string;
+};
+
+export type CreateWorkItemInput = {
+  title: string;
+  description: string;
+  type: WorkItemType;
+  assigneeUserId: string;
 };

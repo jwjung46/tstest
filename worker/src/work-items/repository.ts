@@ -1,4 +1,8 @@
-import type { WorkItemRecord } from "./types.ts";
+import type { CreateWorkItemRecordInput, WorkItemRecord } from "./types.ts";
+
+function createWorkItemId() {
+  return `wi_${crypto.randomUUID()}`;
+}
 
 export async function listWorkItemsForUser(
   db: D1Database,
@@ -12,4 +16,48 @@ export async function listWorkItemsForUser(
     .all<WorkItemRecord>();
 
   return result.results;
+}
+
+export async function createWorkItemRecord(
+  db: D1Database,
+  {
+    title,
+    description,
+    type,
+    requesterUserId,
+    assigneeUserId,
+    now,
+  }: CreateWorkItemRecordInput,
+): Promise<WorkItemRecord> {
+  const id = createWorkItemId();
+  const status = "processing";
+
+  await db
+    .prepare(
+      "INSERT INTO work_items (id, title, description, type, status, requester_user_id, assignee_user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    )
+    .bind(
+      id,
+      title,
+      description,
+      type,
+      status,
+      requesterUserId,
+      assigneeUserId,
+      now,
+      now,
+    )
+    .run();
+
+  return {
+    id,
+    title,
+    description,
+    type,
+    status,
+    requester_user_id: requesterUserId,
+    assignee_user_id: assigneeUserId,
+    created_at: now,
+    updated_at: now,
+  };
 }

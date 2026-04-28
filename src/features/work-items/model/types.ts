@@ -16,3 +16,10 @@ export type WorkItem = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type CreateWorkItemInput = {
+  title: string;
+  description: string;
+  type: WorkItemType;
+  assigneeUserId: string;
+};

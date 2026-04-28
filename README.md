@@ -6,11 +6,11 @@ Cloudflare Worker auth/session boundary for an application with internal `users`
 
 - Public route: `/`
 - Protected route: `/app`
-- Worker-owned routes: `/auth/*`, `/api/session`
+- Worker-owned routes: `/auth/*`, `/api/session`, `/api/work-items`
 - Auth providers: Google, Kakao, Naver
 - Canonical account model: internal user + provider identities
 - Current protected shell:
-  - `/app`: header-only protected home with blank body
+  - `/app`: protected work item list in the shell body
   - shared header overlays use body-level fixed portal popovers to avoid stacking conflicts with the shell panels
 
 ## Architecture
@@ -18,7 +18,7 @@ Cloudflare Worker auth/session boundary for an application with internal `users`
 - `src/pages`: route entry points only
 - `src/features`: feature-owned UI, state, services, and validation
 - `src/platform`: shared API/session boundaries
-- `worker/src`: OAuth, session, account identity, and D1 integration
+- `worker/src`: OAuth, session, account identity, WorkItems, and D1 integration
 
 Feature modules are composed through the protected app shell. Page components remain route entry points and do not own feature domain logic.
 
@@ -45,6 +45,7 @@ NAVER_OAUTH_CLIENT_SECRET=...
 ## D1 Migrations
 
 - `worker/migrations/0002_account_linking.sql`
+- `worker/migrations/0003_work_items.sql`
 
 ## Local Development
 
